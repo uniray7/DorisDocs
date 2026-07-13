@@ -109,8 +109,9 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 - 搭配 failover 機制避免資料遺失
 
 ### Ingestion Pipeline
-- 平台提供：batch 匯入 + streaming（CDC on Kafka），**僅限 managed 模式**使用，為 managed 的唯一寫入通道。
+- 平台提供：**batch pipeline** + **streaming pipeline**（CDC on Kafka），**僅限 managed 模式**使用，為 managed 的唯一寫入通道。
 - Self-managed 使用者一律自行寫入，不開放使用平台 pipeline（責任邊界最乾淨）。
+- **未來 roadmap（2026-07-13 補充）**：可能提供 lakehouse → Doris 的灌資料通道（正式 ingestion 路徑，非僅 staging 測試用）。設計 batch pipeline 時應預留來源擴充空間；staging 的 lakehouse 匯入機制可視為此通道的前身。
 
 ### 基礎建設
 - 非自建機房（私有雲），服務位於 private network。

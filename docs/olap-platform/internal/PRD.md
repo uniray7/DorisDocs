@@ -56,6 +56,9 @@
 - **OLTP 工作負載**：Doris 定位為分析型查詢，不承接交易型場景
 - **BI 工具託管**：平台提供查詢介面，BI 工具由使用者自備（如需連線支援僅提供文件）
 
+### Future（非本期範圍，設計時預留）
+- **Lakehouse → Doris 灌資料通道**：作為正式 ingestion 路徑（非僅 staging 測試用）。batch pipeline 的來源介面應預留擴充空間；staging 的 lakehouse 匯入機制可視為前身。
+
 ## 6. 核心功能大綱
 > Phase 3 逐項展開成 `feature-specs/<slug>.md`，此處放連結。
 
@@ -64,7 +67,7 @@
 3. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
 4. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
 5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（feature-specs/streaming-ingestion.md）——兩種模式：(a) general CDC（固定 schema，落 tmp zone，使用者以 SQL parse/merge 進 raw）；(b) 自定義 schema（web console 設定，schema 驗證失敗落 S3/MinIO 並告警，直寫 raw）。
-6. **Batch ingestion pipeline（僅 managed）**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理。
+6. **Batch ingestion pipeline（僅 managed）**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
 7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——raw zone 建表人工嚴審、curated 免審計配額、核准後由平台代為執行。與 workspace 申請是兩條獨立流程。
 8. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、保護性 config、scale in/out 代操作申請與成本反映。
 9. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。

@@ -17,14 +17,14 @@
 ## 4. 術語表
 | 名詞 | 定義 | 易混淆處 |
 |------|------|----------|
-| Workspace (ws) | 租戶單位，對應一個申請部門/團隊。資料、metadata、運算資源的隔離邊界。 | ⚠️ 對應粒度待定：部門 vs 團隊 vs 成本中心 |
+| Workspace (ws) | 租戶單位，資料、metadata、運算資源的隔離邊界。申請粒度由團隊自定（團隊或部門皆可），但每個 ws 必須綁定一個成本中心作為成本歸屬單位。 | 一個成本中心可擁有多個 ws；成本報表以成本中心彙總 |
 | Shared Cluster | 多個 tier 1 workspace 共用的 Doris cluster，以 resource group 隔離運算。 | 資料仍完全隔離，「共用」僅指硬體 |
 | Dedicated Cluster | 單一 workspace 專屬的 Doris cluster（tier 2 以上）。 | |
 | Tier | Workspace 的資源等級（1/2/3），由 data volume 與 QPS 決定（門檻待 RFC-001 修正）。 | 儲存與運算是否解耦待決 |
 | Resource Group | Doris 的運算資源隔離機制，用於 shared cluster 內限制單一 ws 的 CPU/記憶體用量。 | 不是資料隔離機制 |
-| Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | ⚠️ 各項計量定義待定（見下方待確認） |
-| Data Volume | Workspace 占用的儲存量。 | ⚠️ 計量基準待定：Doris 壓縮後 vs 來源原始大小 |
-| Max QPS | Workspace 的查詢速率上限。 | ⚠️ 計量方式待定：瞬時峰值 vs 滑動窗口平均 |
+| Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | |
+| Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
+| Max QPS | Workspace 的查詢速率上限，以**滑動窗口平均（5 分鐘）**計量判定超標。 | 瞬間爆量由 resource group 併發限制兜底，不直接判超標 |
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。 | |
 | Batch Ingestion | 平台提供的批次匯入通道。 | |
 | Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入。 | |

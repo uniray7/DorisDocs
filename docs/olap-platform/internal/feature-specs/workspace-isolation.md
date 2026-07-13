@@ -16,7 +16,7 @@
 - 每個 ws 擁有專屬的 Doris databases。命名自由度跟著**服務模式**走、與 cluster 類型無關：managed（不論 shared 或 dedicated）一律遵循 `{ws}__{user_defined}__{tmp|raw|curated}`（平台自動化與 zone 治理依賴此慣例，且 tier 升級時 database 名不變）；self-managed 命名自由（平台不解析其結構，僅做 cluster 層級告警）。
 - 授權以 **Doris GRANT 到 database 層級**實作：ws 帳號僅被授予自己 ws databases 的權限，無任何跨 ws 授權路徑。
 - **跨 ws 分享明確不支援**：平台不提供任何跨 ws GRANT 的申請管道；有共享需求應在 lakehouse 層解決（對外文件需前置溝通，使用者多來自習慣跨 ws 的 lakehouse）。
-- Managed 附屬資源同樣按 ws 隔離：Kafka topic（per-ws + ACL）、schema 驗證失敗的 S3/MinIO dead-letter bucket/prefix（per-ws）。
+- Managed 附屬資源同樣按 ws 隔離：Kafka topic（per-ws + ACL）、format 驗證失敗的 corrupted data MinIO 路徑（per-ws prefix）。
 
 ### 2. Metadata 隔離
 - `SHOW DATABASES`、`information_schema`、`SHOW PROCESSLIST` 等不得洩漏其他 ws 的 database 名、table 名、查詢內容。
@@ -35,9 +35,9 @@
 
 | 動作 | 內容 |
 |------|------|
-| `provision_ws(ws, mode, tier)` | 建立 databases（managed）、ws 管理帳號、workload group（shared）、GRANT 授權、Kafka topic + ACL（managed）、dead-letter prefix（managed） |
+| `provision_ws(ws, mode, tier)` | 建立 databases（managed）、ws 管理帳號、workload group（shared）、GRANT 授權、Kafka topic + ACL（managed）、corrupted data prefix（managed） |
 | `suspend_ws(ws)` | 撤銷登入/查詢權限，保留資料（欠費/違規/閒置） |
-| `decommission_ws(ws)` | 回收帳號 → 資料清除（含 Kafka topic、dead-letter）→ 釋放資源；清除有紀錄可稽核 |
+| `decommission_ws(ws)` | 回收帳號 → 資料清除（含 Kafka topic、corrupted data）→ 釋放資源；清除有紀錄可稽核 |
 
 ## 行為規格（驗收時逐條測試）
 

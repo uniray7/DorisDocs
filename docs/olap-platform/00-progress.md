@@ -93,7 +93,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
      | Generic CDC event | JSON，例：`{"eventTime": "2029-10-01T12:34:56Z", "sourceName": "order_service", "operation": "INSERT", "data": "{\"col1\": \"val1\", ...}"}`（data 為字串編碼的 JSON，內容 schema 由使用者自定） |
      | DB2 JSON CDC event | 依內部規格文件（文件不在本 repo，實作時引用） |
      | DB2 XML CDC event | 依內部規格文件（文件不在本 repo，實作時引用） |
-2. ~~**自定義 schema 模式**~~（2026-07-13 決議**取消**，被三種固定 format 取代）：generic CDC 的 `data` 欄位可承載自定義內容，所有 streaming 資料統一落 tmp 再由使用者 SQL parse 進 raw。原「schema 驗證失敗落 S3/MinIO 並告警」機制保留，改為 **format 驗證**（非法 JSON/XML、缺必要欄位）的 dead-letter。
+2. ~~**自定義 schema 模式**~~（2026-07-13 決議**取消**，被三種固定 format 取代）：generic CDC 的 `data` 欄位可承載自定義內容，所有 streaming 資料統一落 tmp 再由使用者 SQL parse 進 raw。原「驗證失敗落 MinIO 並告警」機制保留，改為 **format 驗證**（非法 JSON/XML、缺必要欄位）失敗的資料稱 **corrupted data**，存放於 MinIO 指定路徑。
 
 **Raw zone 建表審核**：raw zone 上 create table 一律經平台審核（避免錯誤設定導致效能不佳歸咎平台、事後還要幫忙 migration）；**審核通過的 raw table 才能被寫入**。
 
@@ -155,7 +155,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | Staging PII | Lakehouse 真實資料進 staging 的 PII 風險經評估忽略 | uniray7 |
 | 2026-07-13 | 命名自由度歸屬 | 命名自由僅限 self-managed（跟服務模式走）；managed 不論 shared/dedicated 一律遵循 zone 命名慣例 | uniray7 |
 | 2026-07-13 | Streaming format | 固定三種 message format：generic CDC event、DB2 JSON CDC、DB2 XML CDC（後兩者規格見內部文件） | uniray7 |
-| 2026-07-13 | 自定義 schema 模式取消 | 被三種固定 format 取代；所有 streaming 統一落 tmp → 使用者 SQL parse/merge 進 raw；dead-letter 改為 format 驗證失敗 | uniray7 |
+| 2026-07-13 | 自定義 schema 模式取消 | 被三種固定 format 取代；所有 streaming 統一落 tmp → 使用者 SQL parse/merge 進 raw；驗證失敗資料稱 corrupted data（MinIO 路徑），觸發條件為 format 驗證失敗 | uniray7 |
+| 2026-07-13 | Corrupted data 命名 | Format 驗證失敗的資料統一稱 **corrupted data**（不用 dead-letter），存放於 MinIO 指定路徑（per-ws prefix） | uniray7 |
 
 ## 試點回饋（Phase 9）
 

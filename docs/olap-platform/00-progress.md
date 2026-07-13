@@ -69,11 +69,11 @@
 - Peak QPS、預期 query performance、ingestion throughput → 平台以**公式**推算適合的規格（tier）
 - Table schema 與 query pattern → 平台審核 schema 正確性
 
-**Staging 驗證流程**（審核通過後、正式開通前）：
-1. 使用者租借平台提供的 staging 環境
-2. 灌測試資料，兩種方式：(a) 產生大量假資料（量級必須與申報資料量相符）；(b) 平台提供機制從 production lakehouse 灌資料過來測
-3. 使用者提交測試報告：**peak QPS 下是否達到預期 query performance**
-4. 測試通過 → 開單由平台開通正式環境（shared 或 dedicated）
+**Staging 驗證流程**（審核通過後、正式開通前；2026-07-13 修正：staging 為**固定小規格試用環境**，機器不足以對齊目標 tier）：
+1. 使用者租借平台提供的 staging 試用環境
+2. 灌測試資料，兩種方式：(a) 產生假資料；(b) 平台提供機制從 production lakehouse 灌資料（或抽樣）過來測——PII 考量經評估忽略
+3. 使用者提交試用報告：schema/查詢設計合理性 + 效能參考數據（**不可外推**，不構成平台效能承諾）
+4. 審核通過 → 開單由平台開通正式環境（shared 或 dedicated）；正式效能以上線後監控為準
 
 ### Zone 資料管理模型（2026-07-13，自草稿整理；適用範圍待確認）
 Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
@@ -144,6 +144,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | Zone 模型範圍 | tmp/raw/curated 與 raw 建表審核僅適用 managed；self-managed 不分 zone、不審表 | uniray7 |
 | 2026-07-13 | DDL 審核精緻化 | Raw zone 建表人工嚴審；curated（ELT 產出）免審但計儲存配額；tmp 由平台管理 | uniray7 |
 | 2026-07-13 | Database 命名 | `{ws}_{tmp\|raw\|curated}_{userdefined}`，分隔用 `_`（Doris 不允許 `-`）；ws 名稱僅小寫字母+數字 | uniray7 |
+| 2026-07-13 | Staging 定位 | 固定小規格試用環境（機器不足以對齊 tier）；效能數據僅供參考不可外推，審核重點為設計合理性 | uniray7 |
+| 2026-07-13 | Staging PII | Lakehouse 真實資料進 staging 的 PII 風險經評估忽略 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

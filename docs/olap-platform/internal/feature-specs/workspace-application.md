@@ -104,9 +104,9 @@ SUBMITTED
   → CHANGES_REQUESTED ──(申請者補件)──→ UNDER_REVIEW
   → REJECTED                            （終態，附原因；可重新申請）
   → APPROVED
-  → STAGING_PROVISIONED                 （staging 環境租借給申請者）
-  → STAGING_TESTING                     （申請者灌測試資料：自產假資料或自 production lakehouse 匯入，量級須與申報相符）
-  → TEST_REPORT_REVIEW                  （平台審核測試報告：peak QPS 下是否達到預期 query performance）
+  → STAGING_PROVISIONED                 （staging 試用環境租借給申請者：固定小規格，不隨 tier 調整）
+  → STAGING_TESTING                     （申請者灌測試資料試用：自產假資料或自 production lakehouse 匯入）
+  → TEST_REPORT_REVIEW                  （平台審核試用報告：schema/查詢設計合理性；效能數據僅供參考）
       ├─ 未達標 → STAGING_TESTING       （調整 schema/規模預估後重測；必要時退回 UNDER_REVIEW 改 tier）
       └─ 通過 ↓
   → PROVISIONING / WAITING_FOR_CAPACITY （tier 2/3 硬體不足時）

@@ -25,10 +25,12 @@
 | Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | |
 | Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
 | Max QPS | Workspace 的查詢速率上限，以**滑動窗口平均（5 分鐘）**計量判定超標。 | 瞬間爆量由 resource group 併發限制兜底，不直接判超標 |
-| Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。 | |
-| Batch Ingestion | 平台提供的批次匯入通道。 | |
-| Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入。 | |
-| Self-write | 使用者繞過平台 pipeline、自行寫入 Doris 的通道。 | 責任邊界待 RFC-002 |
+| Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校、schema 品質把關）的服務模式。寫入一律走平台 pipeline，DDL（create/alter/drop table、database）需經審核流程。 | 申請時選定，**不可事後轉換** |
+| Self-managed 模式 | 使用者自行管理資料的服務模式：可自行灌資料與執行 DDL。平台責任限縮為系統異常告警與付費代操作（scale in/out）。**限定 dedicated cluster（tier 2+）**。 | 平台不負資料管理責任；不可用平台 pipeline |
+| Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
+| Batch Ingestion | 平台提供的批次匯入通道（僅 managed）。 | |
+| Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入（僅 managed）。 | |
+| DDL 審核 | Managed 模式下，create/delete/alter table、database 操作需經平台核准的流程。 | Self-managed 不適用 |
 | FE / BE | Doris 的 Frontend（查詢規劃/metadata）與 Backend（儲存/運算）節點。 | 對外文件不使用此術語 |
 
 ## 5. 範圍（In-scope / Out-of-scope）
@@ -50,22 +52,32 @@
 ## 6. 核心功能大綱
 > Phase 3 逐項展開成 `feature-specs/<slug>.md`，此處放連結。
 
-1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——使用者提交需求（資料量、QPS 預估、成本歸屬），平台審核並佈建。
+1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——使用者提交需求（服務模式、資料量、QPS 預估、成本歸屬），平台審核並佈建。
 2. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
-3. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程。
-4. **Batch ingestion pipeline**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理。
-5. **Streaming ingestion pipeline（CDC on Kafka）**（feature-specs/streaming-ingestion.md）——CDC 接入、schema 對應、延遲與失敗行為。
-6. **自寫入（Self-write）通道**（feature-specs/self-write-access.md）——開放條件、責任邊界（依 RFC 決議補齊）。
-7. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
-8. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型；row/column filter 是否納入依 RFC 決議。
+3. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
+4. **Batch ingestion pipeline**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理（僅 managed）。
+5. **Streaming ingestion pipeline（CDC on Kafka）**（feature-specs/streaming-ingestion.md）——CDC 接入、schema 對應、延遲與失敗行為（僅 managed）。
+6. **DDL 審核流程**（feature-specs/ddl-approval.md）——managed 模式的 create/alter/drop table、database 審核流程與 schema 品質把關。
+7. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、scale in/out 代操作申請與成本反映。
+8. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
+9. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異）；row/column filter 是否納入依 RFC 決議。
 
 ## 7. 多租戶與資源隔離模型
 > 要填：workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Tier 草案（門檻待 RFC 修正）：
-> | Tier | Data Volume | Max QPS | 配置 |
-> |------|------------|---------|------|
-> | 1 | < 500GB | < 20 | Shared cluster + limited resource |
-> | 2 | 500GB – 5TB | 20 – 100 | Small dedicated（3 BEs） |
-> | 3 | 5TB – 30TB | 100 – 500 | Medium dedicated（5–10 BEs） |
+> | Tier | Data Volume | Max QPS | 配置 | 可用服務模式 |
+> |------|------------|---------|------|--------------|
+> | 1 | < 500GB | < 20 | Shared cluster + limited resource | 僅 managed |
+> | 2 | 500GB – 5TB | 20 – 100 | Small dedicated（3 BEs） | managed / self-managed |
+> | 3 | 5TB – 30TB | 100 – 500 | Medium dedicated（5–10 BEs） | managed / self-managed |
+>
+> 服務模式 × 責任分工：
+> | | Managed | Self-managed |
+> |---|---------|--------------|
+> | 寫入通道 | 平台 pipeline（唯一） | 一律自寫 |
+> | DDL | 需審核 | 自由 |
+> | 備份還原/保留清除/效能調校/schema 把關 | 平台承擔 | 使用者自負 |
+> | 平台支援 | 完整 | 異常告警 + 付費代操作（scale in/out） |
+> | 模式轉換 | 不可（需開新 ws 搬資料） | 不可 |
 
 ## 8. 非功能需求（Phase 5 補上）
 > 要填：可用性、查詢延遲 P95/P99、寫入吞吐、擴容機制、計費模式、備援/DR。
@@ -81,10 +93,11 @@
 | # | 事項 | 狀態 | 備註 |
 |---|------|------|------|
 | 1 | Tier 門檻：儲存/運算解耦 | 待討論 | 候選 RFC |
-| 2 | 自寫入的資料管理與責任歸屬 | 待討論 | 候選 RFC |
+| 2 | ~~自寫入的資料管理與責任歸屬~~ | 已解決 | 由服務模式劃分（Decision Log 2026-07-13） |
 | 3 | Row/column filter 做在平台側與否 | 待討論 | 候選 RFC |
 | 4 | 超過 tier 3 規模的處理方式 | 待討論 | |
 | 5 | 敏感資料/PII 的平台責任範圍 | 待討論 | |
+| 6 | Self-managed 代操作（scale in/out）計費方式 | 待討論 | Phase 5 處理 |
 
 ## 12. 衍生文件索引（Phase 8 完成後補上）
 - System Architecture：`system-architecture.md`

@@ -21,13 +21,14 @@
 ### 申請表單
 申請者填寫：
 1. Workspace 名稱（公司內唯一，命名規則：`^[a-z][a-z0-9-]{2,30}$`）
-2. 成本中心代碼
-3. 團隊聯絡人（至少兩位：主要/備援）
-4. 預估**來源原始資料量**（用於 tier 判定，上線後配額改以壓縮後占用計）
-5. 預估 Max QPS（5 分鐘滑動窗口平均）
-6. 使用情境描述（自由文字，審核參考）
-7. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
-8. 預計匯入方式（平台 batch / 平台 streaming / 自寫入）
+2. **服務模式**（managed / self-managed）——表單需並列兩種模式的責任分工說明，並明示**申請後不可轉換**；選 self-managed 且預估規模落在 tier 1 時，前端即時提示「self-managed 限定 dedicated cluster，將以 tier 2 起配（成本較高）」
+3. 成本中心代碼
+4. 團隊聯絡人（至少兩位：主要/備援）
+5. 預估**來源原始資料量**（用於 tier 判定，上線後配額改以壓縮後占用計）
+6. 預估 Max QPS（5 分鐘滑動窗口平均）
+7. 使用情境描述（自由文字，審核參考）
+8. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
+9. 預計匯入方式（managed：平台 batch / 平台 streaming；self-managed：一律自寫，此欄位隱藏）
 
 ### 送出後
 - 顯示申請編號與目前狀態；狀態變更時通知申請者（管道待定：email / 公司 IM）。
@@ -59,6 +60,7 @@
 ```json
 {
   "name": "ads-analytics",
+  "service_mode": "managed",
   "cost_center": "CC-1042",
   "contacts": ["alice@corp", "bob@corp"],
   "estimated_raw_volume_gb": 800,
@@ -68,6 +70,7 @@
   "ingestion_methods": ["batch", "streaming"]
 }
 ```
+規則：`service_mode = "self-managed"` 時 `ingestion_methods` 必須為空（自寫入不需申報）；tier 判定結果最低為 2。
 
 ### Response（201）
 ```json
@@ -105,6 +108,7 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 | 403 | `NOT_COST_CENTER_OWNER` | 非成本中心負責人嘗試確認 |
 | 409 | `APPLICATION_NOT_REVIEWABLE` | 狀態機不允許此操作（如已 REJECTED 再 approve） |
 | 422 | `ESTIMATE_EXCEEDS_MAX_TIER` | 預估規模超過 tier 3 上限（>30TB 或 >500 QPS），需人工洽談（open issue #4） |
+| 400 | `INGESTION_NOT_ALLOWED_FOR_SELF_MANAGED` | self-managed 申請填了平台 ingestion 方式 |
 
 ## 與其他功能的依賴關係
 - 佈建動作依賴 **多租戶隔離**（database/resource group 建立）與 **Cluster tier 分配**（tier 判定規則）。

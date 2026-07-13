@@ -58,8 +58,8 @@
 - Managed 有規範約束（DDL approve 流程），換取平台承擔資料管理責任。
 
 ### Ingestion Pipeline
-- 平台提供：batch 匯入 + streaming（CDC on Kafka），為 managed 模式的標準（唯一？待確認）寫入通道。
-- Self-managed 使用者可自行寫入，也應可選用平台 pipeline（待確認）。
+- 平台提供：batch 匯入 + streaming（CDC on Kafka），**僅限 managed 模式**使用，為 managed 的唯一寫入通道。
+- Self-managed 使用者一律自行寫入，不開放使用平台 pipeline（責任邊界最乾淨）。
 
 ### 基礎建設
 - 非自建機房（私有雲），服務位於 private network。
@@ -75,7 +75,7 @@
 3. Row filter / column filter（使用者已提出需求）：做在平台側還是使用者自理，未決。
 4. 超過 tier 3（>30TB 或 >500 QPS）的使用者如何處理。
 5. 敏感資料/PII 的平台責任範圍尚未明確定義。
-6. 服務模式衍生待確認：(a) self-managed 是否限定 dedicated cluster（tier 2+）？(b) 模式可否事後轉換？(c) managed 的「資料管理責任」具體範圍（備份/保留/效能調校/schema 品質）？(d) self-managed 代操作的計費方式。
+6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；**(d) self-managed 代操作的計費方式仍未決**（Phase 5 處理）。
 
 ## Decision Log
 | 日期 | 事項 | 決議 | 決策者 |
@@ -84,6 +84,11 @@
 | 2026-07-13 | Workspace 粒度 | 團隊自定（團隊/部門皆可），每個 ws 綁定一個成本中心 | uniray7 |
 | 2026-07-13 | Data volume 計量 | 審核用來源原始大小估 tier，上線後以 Doris 壓縮後實際占用計配額 | uniray7 |
 | 2026-07-13 | Max QPS 計量 | 5 分鐘滑動窗口平均判超標；瞬間爆量由 resource group 併發限制兜底 | uniray7 |
+| 2026-07-13 | 服務模式 | 提供 self-managed 與 managed 兩種模式，責任邊界以模式劃分 | uniray7 |
+| 2026-07-13 | Self-managed × tier | Self-managed 限定 dedicated cluster（tier 2+），不可用 shared | uniray7 |
+| 2026-07-13 | 模式轉換 | 不可事後轉換；要換模式需開新 ws 搬資料 | uniray7 |
+| 2026-07-13 | Managed 資料管理責任 | 含備份還原、保留與清除政策、效能調校、schema 品質把關（DDL 審核）四項 | uniray7 |
+| 2026-07-13 | Pipeline 開放範圍 | 平台 ingestion pipeline 僅限 managed；self-managed 一律自寫 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

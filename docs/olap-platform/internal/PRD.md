@@ -111,3 +111,5 @@
 - Data Flow：`data-flow.md`
 - RFC：`rfc/`
 - 對外文件：`../external/`
+
+> 對外文件結構要求（2026-07-13）：按服務模式分別闡明——managed 須完整涵蓋**使用規範、使用限制、責任歸屬**三者；self-managed 重點為**責任歸屬**（規範/限制僅保護性 config 與告警門檻）。`limits-and-quotas.md` 與 `service-spec.md` 以「模式 × 規範/限制/責任」矩陣呈現。

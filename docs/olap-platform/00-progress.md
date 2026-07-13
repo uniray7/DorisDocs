@@ -98,6 +98,12 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 - **Zone 模型（含 raw 建表審核）僅適用 managed**；self-managed 不分 zone、不審表。
 - Managed 的 DDL 審核精緻化：**raw zone 建表嚴審（人工），curated zone（ELT 產出）免審**但計入儲存配額；tmp zone 由平台管理（CDC 落地，使用者不建表）。
 
+### 對外文件結構要求（2026-07-13）
+對外文件需按服務模式分別闡明，深度不同：
+- **Managed**：使用規範（rules of use）、使用限制（limits）、責任歸屬（responsibility split）三者皆須明文。
+- **Self-managed**：重點闡明**責任歸屬**（平台只負責異常告警與付費代操作，資料管理責任全在使用者）；使用規範/限制相對薄（僅防護 cluster 穩定的保護性 config 與告警門檻）。
+- Phase 8 產出對外文件時，`limits-and-quotas.md` 與 `service-spec.md` 應以「模式 × 規範/限制/責任」矩陣呈現，避免使用者搞錯自己適用哪套。
+
 ### HA 架構（2026-07-13，自草稿整理）
 - Active-standby 架構，以 **CCR（cross-cluster replication）** 同步
 - 搭配 failover 機制避免資料遺失

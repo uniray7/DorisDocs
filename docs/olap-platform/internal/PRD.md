@@ -25,13 +25,13 @@
 | Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | |
 | Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
 | Max QPS | Workspace 的查詢速率上限，以**滑動窗口平均（5 分鐘）**計量判定超標。 | 瞬間爆量由 resource group 併發限制兜底，不直接判超標 |
-| Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校、建表建議）的服務模式。寫入一律走平台 pipeline；DDL（create/alter/drop table、database）需 **workspace owner approve**，核准後由平台系統自動執行（平台不審核內容）。 | 申請時選定，**不可事後轉換** |
+| Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校；schema 品質把關與否依 DDL 治理方案 A/B，待決）的服務模式。寫入一律走平台 pipeline；DDL 需經治理流程核准後由平台系統執行（核准者依方案 A/B：ws owner 或平台）。 | 申請時選定，**不可事後轉換** |
 | Self-managed 模式 | 使用者自行管理資料的服務模式：可自行灌資料與執行 DDL。平台責任限縮為系統異常告警與付費代操作（scale in/out）。**限定 dedicated cluster（tier 2+）**。 | 平台不負資料管理責任；不可用平台 pipeline |
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
 | Batch Ingestion | 平台提供的批次匯入通道（僅 managed）。 | |
 | Streaming Ingestion | 平台提供的準即時匯入通道（僅 managed）：使用者以固定 format 的 message 灌進平台 Kafka，統一落 tmp zone，再以 SQL parse/merge 進 raw。支援三種 format：generic CDC event、DB2 JSON CDC、DB2 XML CDC（後兩者規格見內部文件）。 | Format 驗證失敗落 corrupted data（MinIO 指定路徑）並告警 |
-| Database/Table 申請 | Managed 模式下的 DDL 治理流程：ws 成員提交 database/table 的 create/alter/delete 申請，**workspace owner approve** 後由平台系統自動執行。**平台不審核**申請內容，使用者可主動尋求平台建表建議（advisory）。 | Self-managed 不適用（自行下 DDL、平台不負責任）；與 workspace 申請是兩條獨立流程 |
-| Zone | Managed 模式的資料分層模型：**tmp**（CDC 原始落地，immutable，平台管理）→ **raw**（解析/合併後結構化資料，建表經 ws owner approve）→ **curated**（使用者 ELT 產出，同樣 owner approve）。對應 Databricks Bronze/Silver/Gold。 | 僅 managed 適用；self-managed 不分 zone |
+| Database/Table 申請 | Managed 模式下的 DDL 治理流程，**兩案並列待 PM/管理層決定**——方案 A：ws owner approve、平台不審核、選配建表建議；方案 B：平台審核（raw 嚴審/curated 免審）。核准後皆由平台系統執行。 | Self-managed 不適用（自行下 DDL、平台不負責任）；與 workspace 申請是兩條獨立流程 |
+| Zone | Managed 模式的資料分層模型：**tmp**（CDC 原始落地，immutable，平台管理）→ **raw**（解析/合併後結構化資料，建表經 DDL 治理流程核准）→ **curated**（使用者 ELT 產出，治理較輕）。對應 Databricks Bronze/Silver/Gold。核准者依 DDL 治理方案 A/B（待決）。 | 僅 managed 適用；self-managed 不分 zone |
 | Database 命名 | `{ws}__{user_defined}__{tmp\|raw\|curated}`（雙底線分隔，zone 置尾）；Doris database 名稱不允許 `-`（規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，上限 64 字元）。ws 名稱僅小寫字母+數字；user_defined 可含單底線、不可含 `__`、不可以底線開頭/結尾。 | 僅 managed（self-managed 命名自由） |
 | Staging 環境 | 正式開通前的**固定小規格試用環境**（不隨目標 tier 調整）：使用者租借後灌測試資料（自產假資料或自 production lakehouse 匯入）試用，提交設計合理性報告，通過才開通正式環境。 | 效能數據僅供參考、不可外推，不構成平台效能承諾 |
 | CCR | Cross-cluster replication，active-standby HA 架構的同步機制，搭配 failover 避免資料遺失。 | |
@@ -43,7 +43,7 @@
 - 兩種服務模式（managed / self-managed）及其責任邊界
 - Workspace 生命週期：申請、審核、staging 驗證、佈建、（升降級）、停用
 - 多租戶隔離：資料、metadata、運算三層
-- Managed 資料管理：zone 模型（tmp/raw/curated）、database/table 申請流程（ws owner approve，平台代執行）
+- Managed 資料管理：zone 模型（tmp/raw/curated）、database/table 申請流程（治理方案 A/B 待決，平台代執行）
 - Ingestion pipeline（僅 managed）：batch + streaming（三種固定 CDC format：generic / DB2 JSON / DB2 XML）
 - Self-managed 營運支援：異常告警、保護性 config、scale 代操作
 - 使用者側的配額/用量可視化
@@ -68,7 +68,7 @@
 4. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
 5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（feature-specs/streaming-ingestion.md）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）統一落 tmp zone（immutable），使用者以 SQL parse/merge 進 raw；format 驗證失敗落 MinIO corrupted data 路徑並告警。
 6. **Batch ingestion pipeline（僅 managed）**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
-7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——ws 成員提交 DDL 申請 → **workspace owner approve** → 平台系統自動執行（zone 命名由系統保證）；平台不審核，僅提供選配的建表建議。與 workspace 申請是兩條獨立流程。
+7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——ws 成員提交 DDL 申請 → 依治理方案核准（**方案 A**：ws owner approve；**方案 B**：平台審核，raw 嚴審/curated 免審——**待 PM/管理層決定**）→ 平台系統自動執行（zone 命名由系統保證）。與 workspace 申請是兩條獨立流程。
 8. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、保護性 config、scale in/out 代操作申請與成本反映。
 9. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
 10. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異：managed 無直接 load/DDL 權限）；row/column filter 是否納入依 RFC 決議。
@@ -87,9 +87,9 @@
 > | 申請審查 | 決定 shared/dedicated；須申報 ws 整體預期 data size | 僅需管理層成本核准 |
 > | 開通內容 | Cluster/zone databases + pipeline + 監控 | Cluster + monitor/alert/log |
 > | 寫入通道 | 平台 pipeline（唯一） | 一律自寫 |
-> | DDL | ws owner approve → 平台系統代執行（平台不審核，可提供建議） | 自由（不經平台，平台不負責任） |
+> | DDL | 經治理流程核准 → 平台系統代執行（**方案 A**：owner approve、平台不審；**方案 B**：平台審核——待決） | 自由（不經平台，平台不負責任） |
 > | 備份還原/保留清除/效能調校 | 平台承擔 | 使用者自負 |
-> | Schema 品質 | 使用者自負（平台提供選配建議） | 使用者自負 |
+> | Schema 品質 | 依 DDL 治理方案：A＝使用者自負（平台選配建議）；B＝平台把關（待決） | 使用者自負 |
 > | 平台支援 | 完整 | 異常告警 + 付費代操作（scale in/out） |
 > | 模式轉換 | 不可（需開新 ws 搬資料） | 不可 |
 
@@ -114,7 +114,7 @@
 | 4 | 超過 tier 3 規模的處理方式 | 待討論 | |
 | 5 | 敏感資料/PII 的平台責任範圍 | 待討論 | |
 | 6 | Self-managed 代操作（scale in/out）計費方式 | 待討論 | Phase 5 處理 |
-| 7 | **申請時投影片的 schema/query pattern 平台要不要審** | **待 PM 決定** | 選項 A：平台審（把關品質，審核成本高）；選項 B：不審僅供容量評估與建議（與開通後 DDL 治理一致）。開通後 DDL 平台不審已定案 |
+| 7 | **Managed 的 DDL/schema 治理模式** | **待 PM/管理層決定** | 方案 A：ws owner approve、平台不審、選配建議（審核成本低，schema 品質責任在使用者）；方案 B：平台審核（raw 嚴審/curated 免審）、schema 把關屬平台四大責任（品質可控，審核成本高）。申請時投影片 schema 是否平台審核，同屬此決策 |
 
 ## 12. 衍生文件索引（Phase 8 完成後補上）
 - System Architecture：`system-architecture.md`

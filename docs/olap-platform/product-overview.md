@@ -23,8 +23,8 @@
 |---|---|---|
 | 適合對象 | 想省事、接受平台規範的團隊 | 高客製需求、大流量、有能力自管的團隊 |
 | 資料寫入 | 只走平台 pipeline（streaming CDC / batch） | 一律自建 pipeline 自行寫入 |
-| 建表/改表 | Workspace owner approve 後由平台系統自動執行；**平台不審核**，可提供選配建議 | 完全自由（不經平台，平台不負責任） |
-| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校（schema 品質由使用者自負，平台提供建議） | **使用者自負** |
+| 建表/改表 | 經治理流程核准後由平台系統執行——**治理模式待拍板**（方案 A：ws owner approve、平台不審；方案 B：平台審核把關） | 完全自由（不經平台，平台不負責任） |
+| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校；schema 品質把關是否納入平台責任＝待拍板（與治理模式連動） | **使用者自負** |
 | 平台支援 | 完整 | 僅系統異常告警 + 付費代操作（scale in/out） |
 | 可用規格 | Shared 或 Dedicated cluster | 限 Dedicated cluster（tier 2 起） |
 
@@ -54,7 +54,7 @@
 
 ## 五、Managed 模式的資料管理
 
-- **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`／`curated`（建表由 **workspace owner approve**，平台系統代執行，平台不審核）。
+- **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`／`curated`（建表經治理流程核准後由平台系統代執行；核准者依待拍板的治理模式）。
 - **Streaming pipeline**：使用者以固定 format 打 message 進平台 Kafka，支援三種 format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；格式錯誤的資料進 corrupted data 區（MinIO）並告警，不中斷匯入。
 - **Batch pipeline**：規格細化中；介面預留未來 lakehouse → Doris 通道的擴充。
 - **高可用**：active-standby 架構 + cross-cluster replication + failover（具體 RPO/RTO 待量化）。
@@ -81,7 +81,7 @@
 | 4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 #1 一併 |
 | 5 | **Row/column filter**（細粒度權限）做不做在平台側 | 使用者已提需求；做則增加範圍 | RFC 討論 |
 | 6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
-| 7 | **申請時要不要審 schema/query pattern** | 開通後 DDL 已定案不審（ws owner approve）；申請時審不審影響審核成本與品質把關深度 | **PM 決定**，兩選項已列於 PRD |
+| 7 | **Managed 的 DDL/schema 治理模式** | 方案 A（owner approve、平台不審）：審核成本低、品質責任在使用者；方案 B（平台審核、raw 嚴審）：品質可控、平台審核成本高。影響平台人力配置與責任範圍 | **PM/管理層決定**，兩案已並列於 PRD 與規格 |
 | 8 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
 
 ### 需注意的風險

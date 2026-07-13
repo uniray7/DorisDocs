@@ -25,7 +25,7 @@
 4. 團隊聯絡人（至少兩位：主要/備援）
 5. 容量估算三要素：目前 table data size、預期資料成長量、資料 retention → 依 template 附的**公式**試算最大資料量（用於 tier 判定；上線後配額改以壓縮後占用計）
 6. 效能需求三要素：peak QPS（5 分鐘滑動窗口平均）、預期 query performance（目標延遲）、ingestion throughput → 依平台**公式**試算建議規格
-7. Table schema 與 query pattern（managed 附上；**平台是否審核待 PM 決定**——選項 A：平台審核把關；選項 B：不審，僅用於容量評估與選配的建表建議。無論何者，開通後的建表以 ws owner approve 為準）
+7. Table schema 與 query pattern（managed 附上；**是否平台審核依 DDL 治理方案 A/B，待 PM/管理層決定**——方案 A：不審，僅用於容量評估與選配建議、開通後以 ws owner approve 為準；方案 B：平台審核把關，審過即為 raw zone 初始建表核准）
 8. 使用情境描述（審核參考）
 9. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
 10. 預計匯入方式（managed：streaming（三種 CDC format）/ batch，可複選；self-managed 略過此頁）
@@ -44,7 +44,7 @@
 
 ### 佈建與交付
 - Staging 測試通過後由平台團隊執行佈建（內部可用腳本輔助，對使用者無自動化介面）：
-  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}__{user_defined}__tmp`／`__raw`／`__curated`）+ resource group + 初始帳號；申請投影片附的 schema 視為 ws owner 已核准的初始建表，由平台系統執行
+  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}__{user_defined}__tmp`／`__raw`／`__curated`）+ resource group + 初始帳號；申請投影片附的 schema 作為 raw zone 初始建表由平台系統執行（核准來源依 DDL 治理方案：A＝視為 ws owner 已核准；B＝申請審核即平台核准）
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
   - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + 初始帳號（不建 zone databases，命名自由）
   - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間

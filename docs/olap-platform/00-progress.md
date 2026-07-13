@@ -63,8 +63,11 @@
 
 **審查流程按服務模式分軌（2026-07-13 補充，取代先前「平台審 schema」的設計）**：
 - **Self-managed 審查**：僅需**管理層對成本支出核准**即通過。審查後平台執行：開 cluster + 對應的 monitor、alert、log。開通後更動 database/table **不需經過平台、平台不負任何責任**。
-- **Managed 審查**：審查決定開 **shared 或 dedicated cluster**；申請時**必須表明預期整個 workspace 的 data size**。開通後更動 database/table 只需 **workspace owner approve** 即可，**平台不審核**；使用者可主動尋求平台的建表建議（advisory）。
-2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程：ws 成員提交申請 → **workspace owner approve**（平台不審核）→ 平台系統自動執行。使用者可主動尋求平台建表建議。Self-managed 使用者不適用（自行下 DDL，平台不負責任）。
+- **Managed 審查**：審查決定開 **shared 或 dedicated cluster**；申請時**必須表明預期整個 workspace 的 data size**。開通後 database/table 的治理**兩案並列，待 PM/管理層決定**（見下方「DDL 治理兩案」）。
+2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程。**治理模式兩案並列，待 PM/管理層決定**：
+   - **方案 A（owner 治理）**：ws 成員提交申請 → **workspace owner approve**（平台不審核）→ 平台系統自動執行；使用者可主動尋求平台建表建議。Schema 品質責任在使用者。
+   - **方案 B（平台治理）**：提交申請（schema、用途、預估量）→ **平台審核**（raw zone 建表嚴審、curated 免審）→ 核准後平台執行。Schema 品質把關屬平台 managed 四大責任之一。
+   - Self-managed 皆不適用（自行下 DDL，平台不負責任）。
 
 ### 申請審核與 staging 驗證細節（2026-07-13，自使用者早期草稿整理）
 **申請表單需提供**：
@@ -99,14 +102,17 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
      | DB2 XML CDC event | 依內部規格文件（文件不在本 repo，實作時引用） |
 2. ~~**自定義 schema 模式**~~（2026-07-13 決議**取消**，被三種固定 format 取代）：generic CDC 的 `data` 欄位可承載自定義內容，所有 streaming 資料統一落 tmp 再由使用者 SQL parse 進 raw。原「驗證失敗落 MinIO 並告警」機制保留，改為 **format 驗證**（非法 JSON/XML、缺必要欄位）失敗的資料稱 **corrupted data**，存放於 MinIO 指定路徑。
 
-**Raw zone 建表審核**（2026-07-13 改版）：~~一律經平台審核~~ → 改為 **workspace owner approve** 後由平台系統執行，平台不審核、僅提供選配建表建議；**owner 核准建立的 raw table 才能被 pipeline 寫入**。原「避免效能不佳歸咎平台」的考量改由責任歸屬條款處理（schema 品質使用者自負）。
+**Raw zone 建表治理**（2026-07-13 更新：**兩案並列待 PM/管理層決定**）：
+- 方案 A：ws owner approve → 平台系統執行；平台不審、提供選配建議；schema 品質責任在使用者（「效能不佳歸咎平台」風險由責任歸屬條款處理）。
+- 方案 B：平台審核（raw 嚴審/curated 免審）→ 平台執行；「避免錯誤設定導致效能不佳歸咎平台、事後幫忙 migration」由審核把關。
+- 兩案共同點：**經核准建立的 raw table 才能被 pipeline 寫入**；tmp 由平台管理；建表由平台系統執行（使用者無直接 DDL 權限）。
 
 **寫入通道 × cluster 類型**（已對齊，2026-07-13 決議）：
 - 寫入通道由**服務模式**決定，與 cluster 類型無關：managed（不論 shared/dedicated）只走平台 pipeline、無直接 load 權限，可用 Doris ELT 產 curated 表；self-managed 一律自建 pipeline 直接寫入。
 - 草稿中「dedicated 可自建 pipeline」情境即為 self-managed 模式；資料量超過平台 Kafka 承載或高客製需求的使用者應申請 self-managed。
 - Self-managed cluster 平台仍需設定保護性 config 防止 cluster 被打壞，並配告警機制提早預警（屬 self-managed 營運支援範疇）。
 - **Zone 模型（含 raw 建表審核）僅適用 managed**；self-managed 不分 zone、不審表。
-- ~~Managed 的 DDL 審核精緻化（raw 嚴審/curated 免審）~~（2026-07-13 被 DDL 治理改版取代）：raw/curated 建表一律 ws owner approve + 平台系統代執行，計入儲存配額；tmp zone 仍由平台管理。
+- Managed 的 DDL 治理：方案 A（owner approve）/方案 B（平台審核，raw 嚴審/curated 免審）兩案並列待決；無論何案，建表計入儲存配額、tmp zone 由平台管理、平台系統代執行。
 
 ### 對外文件結構要求（2026-07-13）
 對外文件需按服務模式分別闡明，深度不同：
@@ -138,6 +144,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 4. 超過 tier 3（>30TB 或 >500 QPS）的使用者如何處理。
 5. 敏感資料/PII 的平台責任範圍尚未明確定義。
 6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；**(d) self-managed 代操作的計費方式仍未決**（Phase 5 處理）。
+7. **Managed 的 DDL 治理模式**：方案 A（ws owner approve + 平台選配建議）vs 方案 B（平台審核，raw 嚴審/curated 免審）——**待 PM/管理層決定**；申請時投影片 schema 是否平台審核同屬此決策。
 
 ## Decision Log
 | 日期 | 事項 | 決議 | 決策者 |
@@ -163,7 +170,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | Corrupted data 命名 | Format 驗證失敗的資料統一稱 **corrupted data**（不用 dead-letter），存放於 MinIO 指定路徑（per-ws prefix） | uniray7 |
 | 2026-07-13 | 申請流程純人工 | Workspace 申請（含 staging 租借/報告審核）無自動化 API：投影片 template + 每週三申請會議 + 人工追蹤表；API 留作未來 roadmap | uniray7 |
 | 2026-07-13 | 審查分軌 | Self-managed：管理層成本核准即通過，平台開 cluster+monitor/alert/log；Managed：審查定 shared/dedicated，須申報 ws 整體預期 data size | uniray7 |
-| 2026-07-13 | DDL 治理改版 | **取代「raw 建表平台嚴審」**：managed 的 database/table 更動由 **workspace owner approve**，平台不審核、僅應使用者要求提供建表建議（advisory）；self-managed 更動不經平台、平台不負責任 | uniray7 |
+| 2026-07-13 | DDL 治理兩案並列 | Managed 的 database/table 治理**未定案**，兩案並列待 PM/管理層決定——方案 A：ws owner approve、平台不審、選配建議；方案 B：平台審核（raw 嚴審/curated 免審）、schema 把關屬平台責任。Self-managed 不經平台、平台不負責任（此點已定） | uniray7 |
 
 ## 試點回饋（Phase 9）
 

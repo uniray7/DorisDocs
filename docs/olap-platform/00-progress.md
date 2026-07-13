@@ -57,6 +57,11 @@
 - Self-managed 給高自由度使用者；平台責任限縮為異常告警 + 付費代操作。
 - Managed 有規範約束（DDL approve 流程），換取平台承擔資料管理責任。
 
+### 申請流程（2026-07-13 補充）
+平台有**兩個獨立的申請流程**：
+1. **Workspace 申請流程**（所有使用者）——申請開通 workspace，含服務模式選擇、tier 判定、佈建。
+2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程：提交申請（schema、用途、預估量）→ 平台審核（schema 品質把關）→ 核准後由平台執行。Self-managed 使用者不適用（自行下 DDL）。
+
 ### Ingestion Pipeline
 - 平台提供：batch 匯入 + streaming（CDC on Kafka），**僅限 managed 模式**使用，為 managed 的唯一寫入通道。
 - Self-managed 使用者一律自行寫入，不開放使用平台 pipeline（責任邊界最乾淨）。

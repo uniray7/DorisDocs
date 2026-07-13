@@ -30,7 +30,7 @@
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
 | Batch Ingestion | 平台提供的批次匯入通道（僅 managed）。 | |
 | Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入（僅 managed）。 | |
-| DDL 審核 | Managed 模式下，create/delete/alter table、database 操作需經平台核准的流程。 | Self-managed 不適用 |
+| Database/Table 申請 | Managed 模式下的 DDL 治理流程：使用者提交 database/table 的 create/alter/delete 申請（含 schema、用途、預估量），平台審核（schema 品質把關）後**由平台代為執行**。 | Self-managed 不適用（自行下 DDL）；與 workspace 申請是兩條獨立流程 |
 | FE / BE | Doris 的 Frontend（查詢規劃/metadata）與 Backend（儲存/運算）節點。 | 對外文件不使用此術語 |
 
 ## 5. 範圍（In-scope / Out-of-scope）
@@ -57,7 +57,7 @@
 3. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
 4. **Batch ingestion pipeline**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理（僅 managed）。
 5. **Streaming ingestion pipeline（CDC on Kafka）**（feature-specs/streaming-ingestion.md）——CDC 接入、schema 對應、延遲與失敗行為（僅 managed）。
-6. **DDL 審核流程**（feature-specs/ddl-approval.md）——managed 模式的 create/alter/drop table、database 審核流程與 schema 品質把關。
+6. **Database/Table 申請流程**（feature-specs/database-table-application.md）——managed 模式下 database/table 的 create/alter/delete 申請、schema 品質審核、核准後由平台代為執行。與 workspace 申請是兩條獨立流程。
 7. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、scale in/out 代操作申請與成本反映。
 8. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
 9. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異）；row/column filter 是否納入依 RFC 決議。

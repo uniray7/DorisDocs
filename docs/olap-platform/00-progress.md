@@ -60,14 +60,18 @@
 ### 申請流程（2026-07-13 補充）
 平台有**兩個獨立的申請流程**：
 1. **Workspace 申請流程**（所有使用者）——申請開通 workspace，含服務模式選擇、tier 判定、佈建。**純人工、無自動化 API**（2026-07-13 決議）：平台提供投影片 template，使用者填入必要資訊，於每週三申請會議報告，平台審核後以內部工單執行佈建；狀態以人工追蹤表維護。
-2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程：提交申請（schema、用途、預估量）→ 平台審核（schema 品質把關）→ 核准後由平台執行。Self-managed 使用者不適用（自行下 DDL）。
+
+**審查流程按服務模式分軌（2026-07-13 補充，取代先前「平台審 schema」的設計）**：
+- **Self-managed 審查**：僅需**管理層對成本支出核准**即通過。審查後平台執行：開 cluster + 對應的 monitor、alert、log。開通後更動 database/table **不需經過平台、平台不負任何責任**。
+- **Managed 審查**：審查決定開 **shared 或 dedicated cluster**；申請時**必須表明預期整個 workspace 的 data size**。開通後更動 database/table 只需 **workspace owner approve** 即可，**平台不審核**；使用者可主動尋求平台的建表建議（advisory）。
+2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程：ws 成員提交申請 → **workspace owner approve**（平台不審核）→ 平台系統自動執行。使用者可主動尋求平台建表建議。Self-managed 使用者不適用（自行下 DDL，平台不負責任）。
 
 ### 申請審核與 staging 驗證細節（2026-07-13，自使用者早期草稿整理）
 **申請表單需提供**：
 - 使用場景描述
 - Table data size、預期資料成長量、資料 retention → 平台提供**公式**讓使用者估算最大資料量
 - Peak QPS、預期 query performance、ingestion throughput → 平台以**公式**推算適合的規格（tier）
-- Table schema 與 query pattern → 平台審核 schema 正確性
+- Table schema 與 query pattern → ~~平台審核 schema 正確性~~（2026-07-13 改版：申請時是否平台審核**待 PM 決定**；開通後 DDL 由 ws owner approve、平台不審）
 
 **Staging 驗證流程**（審核通過後、正式開通前；2026-07-13 修正：staging 為**固定小規格試用環境**，機器不足以對齊目標 tier）：
 1. 使用者租借平台提供的 staging 試用環境
@@ -95,14 +99,14 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
      | DB2 XML CDC event | 依內部規格文件（文件不在本 repo，實作時引用） |
 2. ~~**自定義 schema 模式**~~（2026-07-13 決議**取消**，被三種固定 format 取代）：generic CDC 的 `data` 欄位可承載自定義內容，所有 streaming 資料統一落 tmp 再由使用者 SQL parse 進 raw。原「驗證失敗落 MinIO 並告警」機制保留，改為 **format 驗證**（非法 JSON/XML、缺必要欄位）失敗的資料稱 **corrupted data**，存放於 MinIO 指定路徑。
 
-**Raw zone 建表審核**：raw zone 上 create table 一律經平台審核（避免錯誤設定導致效能不佳歸咎平台、事後還要幫忙 migration）；**審核通過的 raw table 才能被寫入**。
+**Raw zone 建表審核**（2026-07-13 改版）：~~一律經平台審核~~ → 改為 **workspace owner approve** 後由平台系統執行，平台不審核、僅提供選配建表建議；**owner 核准建立的 raw table 才能被 pipeline 寫入**。原「避免效能不佳歸咎平台」的考量改由責任歸屬條款處理（schema 品質使用者自負）。
 
 **寫入通道 × cluster 類型**（已對齊，2026-07-13 決議）：
 - 寫入通道由**服務模式**決定，與 cluster 類型無關：managed（不論 shared/dedicated）只走平台 pipeline、無直接 load 權限，可用 Doris ELT 產 curated 表；self-managed 一律自建 pipeline 直接寫入。
 - 草稿中「dedicated 可自建 pipeline」情境即為 self-managed 模式；資料量超過平台 Kafka 承載或高客製需求的使用者應申請 self-managed。
 - Self-managed cluster 平台仍需設定保護性 config 防止 cluster 被打壞，並配告警機制提早預警（屬 self-managed 營運支援範疇）。
 - **Zone 模型（含 raw 建表審核）僅適用 managed**；self-managed 不分 zone、不審表。
-- Managed 的 DDL 審核精緻化：**raw zone 建表嚴審（人工），curated zone（ELT 產出）免審**但計入儲存配額；tmp zone 由平台管理（CDC 落地，使用者不建表）。
+- ~~Managed 的 DDL 審核精緻化（raw 嚴審/curated 免審）~~（2026-07-13 被 DDL 治理改版取代）：raw/curated 建表一律 ws owner approve + 平台系統代執行，計入儲存配額；tmp zone 仍由平台管理。
 
 ### 對外文件結構要求（2026-07-13）
 對外文件需按服務模式分別闡明，深度不同：
@@ -158,6 +162,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | 自定義 schema 模式取消 | 被三種固定 format 取代；所有 streaming 統一落 tmp → 使用者 SQL parse/merge 進 raw；驗證失敗資料稱 corrupted data（MinIO 路徑），觸發條件為 format 驗證失敗 | uniray7 |
 | 2026-07-13 | Corrupted data 命名 | Format 驗證失敗的資料統一稱 **corrupted data**（不用 dead-letter），存放於 MinIO 指定路徑（per-ws prefix） | uniray7 |
 | 2026-07-13 | 申請流程純人工 | Workspace 申請（含 staging 租借/報告審核）無自動化 API：投影片 template + 每週三申請會議 + 人工追蹤表；API 留作未來 roadmap | uniray7 |
+| 2026-07-13 | 審查分軌 | Self-managed：管理層成本核准即通過，平台開 cluster+monitor/alert/log；Managed：審查定 shared/dedicated，須申報 ws 整體預期 data size | uniray7 |
+| 2026-07-13 | DDL 治理改版 | **取代「raw 建表平台嚴審」**：managed 的 database/table 更動由 **workspace owner approve**，平台不審核、僅應使用者要求提供建表建議（advisory）；self-managed 更動不經平台、平台不負責任 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

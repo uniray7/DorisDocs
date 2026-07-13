@@ -20,14 +20,14 @@
 
 ## 前置條件與假設
 
-- 申請已達 `APPROVED` 狀態（schema 與規模預估已通過平台審核）。
+- 申請已達 `APPROVED` 狀態（按模式完成審查：self-managed 成本核准；managed 規模審查定 shared/dedicated）。
 - Staging 為**固定小規格的試用環境**，不隨目標 tier 調整；多個申請者可能共用 staging 資源（隔離方式比照 shared cluster）。
 - 兩種服務模式都要通過 staging 驗證；差異在灌資料方式（見下）。
 
 ## 流程
 
 ### 1. Staging 租借（STAGING_PROVISIONED）
-- 系統依目標 tier 佈建 staging 環境（managed 含 zone databases 與審核過的 raw 表；self-managed 為空 cluster）。
+- 系統依目標 tier 佈建 staging 環境（managed 含 zone databases 與投影片 schema 建立的 raw 表；self-managed 為空 cluster）。
 - 租借有**期限**（建議預設 14 天，可申請延長一次）——避免 staging 資源被長期占用。
   - ⚠️ 期限與延長政策待定案。
 - 交付 staging 連線資訊與測試指引。
@@ -37,7 +37,7 @@
 
 | 方式 | 說明 | 適用 |
 |------|------|------|
-| (a) 假資料產生 | 使用者自產假資料；平台提供資料生成工具/範本（依審核過的 schema 產生指定筆數） | 兩種模式 |
+| (a) 假資料產生 | 使用者自產假資料；平台提供資料生成工具/範本（依申請時附的 schema 產生指定筆數） | 兩種模式 |
 | (b) Lakehouse 匯入 | 平台提供機制從 production lakehouse 灌真實資料（或抽樣子集）到 staging 測試 | 兩種模式 |
 
 - 灌入通道：managed 走平台 pipeline（staging 版）；self-managed 自行寫入。

@@ -23,8 +23,8 @@
 |---|---|---|
 | 適合對象 | 想省事、接受平台規範的團隊 | 高客製需求、大流量、有能力自管的團隊 |
 | 資料寫入 | 只走平台 pipeline（streaming CDC / batch） | 一律自建 pipeline 自行寫入 |
-| 建表/改表 | 走申請流程，平台審核後代為執行 | 完全自由 |
-| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校、schema 品質把關 | **使用者自負** |
+| 建表/改表 | Workspace owner approve 後由平台系統自動執行；**平台不審核**，可提供選配建議 | 完全自由（不經平台，平台不負責任） |
+| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校（schema 品質由使用者自負，平台提供建議） | **使用者自負** |
 | 平台支援 | 完整 | 僅系統異常告警 + 付費代操作（scale in/out） |
 | 可用規格 | Shared 或 Dedicated cluster | 限 Dedicated cluster（tier 2 起） |
 
@@ -42,16 +42,19 @@
 ## 四、使用者旅程
 
 ```
-填投影片 template → 每週三申請會議報告 → 審核（tier 判定 + schema 審查 + 成本中心確認）
+填投影片 template → 每週三申請會議報告 → 審核（按模式分軌，見下）
   → Staging 試用環境驗證（小規格，驗設計不驗效能）→ 平台佈建正式環境 → 上線
 ```
+
+- **Self-managed 審查**：僅需管理層成本核准；通過即開 cluster + monitor/alert/log。
+- **Managed 審查**：須申報 workspace 整體預期 data size，審查決定 shared 或 dedicated cluster。
 
 - **申請流程純人工**（投影片 + 會議 + 追蹤表），不建自動化系統；申請量成長後再依已定義的狀態機做自助入口。
 - **Staging 是試用性質**：固定小規格（機器不足以對齊正式規格），驗證 schema/查詢設計合理性；效能數據僅供參考，**不構成平台效能承諾**。
 
 ## 五、Managed 模式的資料管理
 
-- **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`（結構化資料，**建表需平台嚴審**）→ `curated`（使用者 ELT 自產，免審）。
+- **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`／`curated`（建表由 **workspace owner approve**，平台系統代執行，平台不審核）。
 - **Streaming pipeline**：使用者以固定 format 打 message 進平台 Kafka，支援三種 format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；格式錯誤的資料進 corrupted data 區（MinIO）並告警，不中斷匯入。
 - **Batch pipeline**：規格細化中；介面預留未來 lakehouse → Doris 通道的擴充。
 - **高可用**：active-standby 架構 + cross-cluster replication + failover（具體 RPO/RTO 待量化）。
@@ -78,7 +81,8 @@
 | 4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 #1 一併 |
 | 5 | **Row/column filter**（細粒度權限）做不做在平台側 | 使用者已提需求；做則增加範圍 | RFC 討論 |
 | 6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
-| 7 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
+| 7 | **申請時要不要審 schema/query pattern** | 開通後 DDL 已定案不審（ws owner approve）；申請時審不審影響審核成本與品質把關深度 | **PM 決定**，兩選項已列於 PRD |
+| 8 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
 
 ### 需注意的風險
 - **人工申請流程的規模瓶頸**：每週三會議承載量有限，申請量成長時會排隊；已預留自動化路徑，但需要有觸發升級的判斷點。

@@ -25,13 +25,15 @@
 4. 團隊聯絡人（至少兩位：主要/備援）
 5. 容量估算三要素：目前 table data size、預期資料成長量、資料 retention → 依 template 附的**公式**試算最大資料量（用於 tier 判定；上線後配額改以壓縮後占用計）
 6. 效能需求三要素：peak QPS（5 分鐘滑動窗口平均）、預期 query performance（目標延遲）、ingestion throughput → 依平台**公式**試算建議規格
-7. Table schema 與 query pattern（managed 必附——平台審核 schema 正確性的依據；審過的 schema 即為 raw zone 初始建表申請）
+7. Table schema 與 query pattern（managed 附上；**平台是否審核待 PM 決定**——選項 A：平台審核把關；選項 B：不審，僅用於容量評估與選配的建表建議。無論何者，開通後的建表以 ws owner approve 為準）
 8. 使用情境描述（審核參考）
 9. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
 10. 預計匯入方式（managed：streaming（三種 CDC format）/ batch，可複選；self-managed 略過此頁）
 
-### 2. 每週三申請會議
-- 申請者攜投影片向平台團隊報告；平台團隊當場提問（規模估算依據、schema/query pattern、模式選擇的理解）。
+### 2. 每週三申請會議（審查按模式分軌）
+- 申請者攜投影片向平台團隊報告。
+- **Self-managed 審查**：僅需**管理層對成本支出核准**即通過（會議確認成本中心與規模即可，不審技術內容）。
+- **Managed 審查**：必須申報**整個 workspace 的預期 data size**；審查結論決定開 **shared 或 dedicated cluster**（tier 判定）。平台當場提問規模估算依據與模式選擇的理解。
 - 會議結論三種：**核准**（可調整 tier，記錄理由）、**補件**（下次會議再報，附具體缺項）、**拒絕**（附原因，可再申請）。
 - 申請聲明含 PII 時，需完成安全/合規會簽才能核准（銜接 PRD § 9）。
 - 決議記錄於會議紀錄（申請追蹤表），並以 email/IM 通知申請者與成本中心負責人。
@@ -42,9 +44,9 @@
 
 ### 佈建與交付
 - Staging 測試通過後由平台團隊執行佈建（內部可用腳本輔助，對使用者無自動化介面）：
-  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}__{user_defined}__tmp`／`__raw`／`__curated`）+ resource group + 初始帳號；申請時審核通過的 schema 直接作為 raw zone 初始建表執行
+  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}__{user_defined}__tmp`／`__raw`／`__curated`）+ resource group + 初始帳號；申請投影片附的 schema 視為 ws owner 已核准的初始建表，由平台系統執行
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
-  - Tier 2/3 self-managed：開立 dedicated cluster + 保護性 config + 告警接線 + 初始帳號（不建 zone databases，命名自由）
+  - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + 初始帳號（不建 zone databases，命名自由）
   - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間
 - 完成後交付：連線資訊、初始管理帳號、配額明細、快速開始文件連結（依模式給對應文件：managed 給 pipeline/DDL 申請指南，self-managed 給責任歸屬與告警說明）。
 
@@ -70,7 +72,7 @@ Template 章節對應上方欄位，每個申請必附（審核會議即照此�
 > 無自動化系統，狀態由平台團隊在申請追蹤表上人工維護；狀態語義如下，供追蹤表與未來自動化沿用。
 ```
 SUBMITTED                               （投影片提交，排入最近的週三申請會議）
-  → UNDER_REVIEW                        （會議報告與審核：成本中心同意確認 + 規模公式推算 + schema/query pattern 審核；含 PII 者需完成合規會簽）
+  → UNDER_REVIEW                        （會議報告與審核，按模式分軌：self-managed 僅管理層成本核准；managed 審 data size 定 shared/dedicated；含 PII 者需完成合規會簽）
   → CHANGES_REQUESTED ──(補件，下次會議再報)──→ UNDER_REVIEW
   → REJECTED                            （終態，附原因；可再申請）
   → APPROVED
@@ -98,7 +100,7 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 | 規模估算依據不足 | 容量/效能三要素缺項，公式無法推算 tier |
 | 超過 tier 3 上限 | >30TB 或 >500 QPS，轉人工洽談（open issue #4） |
 | self-managed 填了平台匯入方式 | self-managed 一律自寫，不申報 ingestion |
-| Schema/query pattern 缺失（managed） | raw 建表審核無依據 |
+| Managed 未申報 ws 整體預期 data size | shared/dedicated 判定無依據 |
 | PII 聲明未完成合規會簽 | 銜接 PRD § 9 |
 
 ### 未來自動化（Roadmap，非本期範圍）

@@ -16,7 +16,7 @@
 tmp zone（immutable，平台管理 schema）
    │  使用者定義的 merge SQL（insert...select，平台代管排程執行）
    ▼
-raw zone（審核過的 table）
+raw zone（ws owner 核准的 table）
    │  使用者自行 ELT（insert...select）
    ▼
 curated zone（免審）
@@ -50,7 +50,7 @@ curated zone（免審）
 3. 目標 tmp table 由平台自動建立（依 format 的固定 schema，命名 `{ws}__{pipeline}__tmp`）。
 
 ### 設定 merge SQL（tmp → raw）
-1. 使用者提交 merge SQL（`INSERT INTO {raw_table} SELECT ... FROM {tmp_table} WHERE ...`）；目標 raw table 必須是已審核通過的表。
+1. 使用者提交 merge SQL（`INSERT INTO {raw_table} SELECT ... FROM {tmp_table} WHERE ...`）；目標 raw table 必須是 ws owner 已核准建立的表。
 2. 平台檢核：SQL 僅允許讀 tmp、寫 raw（同 ws）；禁止其他寫入目標。
 3. 設定執行排程（週期，如每 5 分鐘；細節機制**待補**——平台代管排程器 vs Doris JOB，實作時定案）。
 4. Merge SQL 可隨時更新（版本紀錄保留，供除錯回溯）。
@@ -87,12 +87,12 @@ curated zone（免審）
 | HTTP | 錯誤碼 | 情境 |
 |------|--------|------|
 | 422 | `WS_NOT_MANAGED` | self-managed ws 嘗試建 pipeline |
-| 422 | `RAW_TABLE_NOT_APPROVED` | merge SQL 目標不是審核通過的 raw table |
+| 422 | `RAW_TABLE_NOT_APPROVED` | merge SQL 目標不是 ws owner 核准建立的 raw table |
 | 422 | `MERGE_SQL_SCOPE_VIOLATION` | merge SQL 讀寫範圍超出「讀 tmp 寫 raw（同 ws）」 |
 | 409 | `PIPELINE_LIMIT_REACHED` | 超過 ws 的 pipeline 數量上限（上限值 Phase 5） |
 
 ## 與其他功能的依賴關係
-- 目標 raw table 需先經 **database-table-application** 審核。
+- 目標 raw table 需先經 **database-table-application** 流程（ws owner approve → 平台系統執行）建立。
 - Topic/憑證/corrupted data 路徑的 per-ws 隔離依 **workspace-isolation**。
 - 指標與配額計入 **quota-and-usage**；tmp 清理政策屬 managed 資料管理責任（Phase 5/6 定案）。
 - Staging 版 pipeline 行為一致（**staging-validation** 的 ingestion 接通驗證即測此流程）。

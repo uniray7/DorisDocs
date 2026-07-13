@@ -81,9 +81,9 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 - **raw zone**（≈Silver）：解析/合併後的結構化資料
 - **curated zone**（≈Gold）：使用者以 Doris ELT（insert...select）產出的衍生資料表
 
-**Database 命名**：`{ws}_{tmp|raw|curated}_{userdefined}`
-- ⚠️ 已查證 Doris 限制（FeNameFormat）：database 名稱規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，**不允許連字號 `-`**，長度上限 64；原草稿的 `-` 分隔改為 `_`。
-- 衍生決定：ws 名稱禁用 `_` 與 `-`（僅小寫字母+數字），使 database 名稱可無歧義反解析出 ws 與 zone。
+**Database 命名**（2026-07-13 修訂）：`{ws}__{user_defined}__{tmp|raw|curated}`（雙底線分隔，zone 置尾）
+- ⚠️ 已查證 Doris 限制（FeNameFormat）：database 名稱規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，**不允許連字號 `-`**，長度上限 64；分隔符用底線。
+- 分隔符為**雙底線 `__`**：ws 名稱禁用 `_` 與 `-`（僅小寫字母+數字）；user_defined 可含單底線、不可含 `__`、不可以底線開頭/結尾——database 名稱仍可無歧義反解析出 ws、user_defined 與 zone。
 
 **平台 pipeline 兩種模式**（皆走平台 Kafka，資料格式 jsonline）：
 1. **General CDC 模式**：固定 schema（follow IBM CDC 格式），資料直接寫入 tmp zone（immutable）；使用者再以平台提供的機制（細節待補）用 SQL（insert...select）決定如何 parse/merge，寫入 raw zone。
@@ -143,7 +143,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | 寫入通道對齊 | 通道由服務模式決定、與 cluster 類型無關；不採 hybrid（managed+dedicated 不可另自建 pipeline） | uniray7 |
 | 2026-07-13 | Zone 模型範圍 | tmp/raw/curated 與 raw 建表審核僅適用 managed；self-managed 不分 zone、不審表 | uniray7 |
 | 2026-07-13 | DDL 審核精緻化 | Raw zone 建表人工嚴審；curated（ELT 產出）免審但計儲存配額；tmp 由平台管理 | uniray7 |
-| 2026-07-13 | Database 命名 | `{ws}_{tmp\|raw\|curated}_{userdefined}`，分隔用 `_`（Doris 不允許 `-`）；ws 名稱僅小寫字母+數字 | uniray7 |
+| 2026-07-13 | Database 命名 | ~~`{ws}_{tmp\|raw\|curated}_{userdefined}`~~ → 修訂為 `{ws}__{user_defined}__{tmp\|raw\|curated}`（雙底線分隔、zone 置尾）；ws 名稱僅小寫字母+數字；user_defined 可含單底線、不可含 `__` | uniray7 |
 | 2026-07-13 | Staging 定位 | 固定小規格試用環境（機器不足以對齊 tier）；效能數據僅供參考不可外推，審核重點為設計合理性 | uniray7 |
 | 2026-07-13 | Staging PII | Lakehouse 真實資料進 staging 的 PII 風險經評估忽略 | uniray7 |
 

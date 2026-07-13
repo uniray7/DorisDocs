@@ -20,7 +20,7 @@
 
 ### 申請表單
 申請者填寫：
-1. Workspace 名稱（公司內唯一，命名規則：`^[a-z][a-z0-9]{2,20}$`——僅小寫字母+數字，**禁用 `-` 與 `_`**：ws 名稱會組成 Doris database 名 `{ws}_{zone}_{userdefined}`，Doris 不允許 `-` 且 `_` 保留為分隔符）
+1. Workspace 名稱（公司內唯一，命名規則：`^[a-z][a-z0-9]{2,20}$`——僅小寫字母+數字，**禁用 `-` 與 `_`**：ws 名稱會組成 Doris database 名 `{ws}__{user_defined}__{zone}`，Doris 不允許 `-` 且雙底線 `__` 保留為分隔符）
 2. **服務模式**（managed / self-managed）——表單需並列兩種模式的責任分工說明，並明示**申請後不可轉換**；選 self-managed 且預估規模落在 tier 1 時，前端即時提示「self-managed 限定 dedicated cluster，將以 tier 2 起配（成本較高）」
 3. 成本中心代碼
 4. 團隊聯絡人（至少兩位：主要/備援）
@@ -42,7 +42,7 @@
 
 ### 佈建與交付
 - Staging 測試通過後系統自動佈建：
-  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}_tmp_*`／`{ws}_raw_*`／`{ws}_curated_*`）+ resource group + 初始帳號；申請時審核通過的 schema 直接作為 raw zone 初始建表執行
+  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}__{user_defined}__tmp`／`__raw`／`__curated`）+ resource group + 初始帳號；申請時審核通過的 schema 直接作為 raw zone 初始建表執行
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
   - Tier 2/3 self-managed：開立 dedicated cluster + 保護性 config + 告警接線 + 初始帳號（不建 zone databases，命名自由）
   - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間
@@ -149,5 +149,5 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 - [ ] 含 PII 聲明的申請無法在未完成合規會簽前被核准
 - [ ] 同名 workspace 申請被正確拒絕
 - [ ] self-managed 申請不會被配到 shared cluster（最低 tier 2），且不含 zone databases
-- [ ] managed 佈建後 zone databases 命名符合 `{ws}_{zone}_{userdefined}` 且通過 Doris 命名檢核
+- [ ] managed 佈建後 zone databases 命名符合 `{ws}__{user_defined}__{zone}` 且通過 Doris 命名檢核（總長 ≤64、user_defined 不含 `__`）
 - [ ] tier 2/3 在資源不足時正確進入 WAITING_FOR_CAPACITY 並回報預估等待時間

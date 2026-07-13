@@ -32,7 +32,7 @@
 | Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入（僅 managed）。 | |
 | Database/Table 申請 | Managed 模式下的 DDL 治理流程：使用者提交 database/table 的 create/alter/delete 申請（含 schema、用途、預估量），平台審核（schema 品質把關）後**由平台代為執行**。**Raw zone 建表人工嚴審；curated zone 免審**（計入儲存配額）。 | Self-managed 不適用（自行下 DDL）；與 workspace 申請是兩條獨立流程 |
 | Zone | Managed 模式的資料分層模型：**tmp**（CDC 原始落地，immutable，平台管理）→ **raw**（解析/合併後結構化資料，建表嚴審）→ **curated**（使用者 ELT 產出，免審）。對應 Databricks Bronze/Silver/Gold。 | 僅 managed 適用；self-managed 不分 zone |
-| Database 命名 | `{ws}_{tmp\|raw\|curated}_{userdefined}`；Doris database 名稱不允許 `-`（規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，上限 64 字元），故以 `_` 分隔，ws 名稱僅小寫字母+數字。 | 僅 managed（self-managed 命名自由） |
+| Database 命名 | `{ws}__{user_defined}__{tmp\|raw\|curated}`（雙底線分隔，zone 置尾）；Doris database 名稱不允許 `-`（規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，上限 64 字元）。ws 名稱僅小寫字母+數字；user_defined 可含單底線、不可含 `__`、不可以底線開頭/結尾。 | 僅 managed（self-managed 命名自由） |
 | Staging 環境 | 正式開通前的**固定小規格試用環境**（不隨目標 tier 調整）：使用者租借後灌測試資料（自產假資料或自 production lakehouse 匯入）試用，提交設計合理性報告，通過才開通正式環境。 | 效能數據僅供參考、不可外推，不構成平台效能承諾 |
 | CCR | Cross-cluster replication，active-standby HA 架構的同步機制，搭配 failover 避免資料遺失。 | |
 | FE / BE | Doris 的 Frontend（查詢規劃/metadata）與 Backend（儲存/運算）節點。 | 對外文件不使用此術語 |

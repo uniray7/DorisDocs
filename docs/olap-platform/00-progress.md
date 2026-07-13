@@ -62,6 +62,43 @@
 1. **Workspace 申請流程**（所有使用者）——申請開通 workspace，含服務模式選擇、tier 判定、佈建。
 2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程：提交申請（schema、用途、預估量）→ 平台審核（schema 品質把關）→ 核准後由平台執行。Self-managed 使用者不適用（自行下 DDL）。
 
+### 申請審核與 staging 驗證細節（2026-07-13，自使用者早期草稿整理）
+**申請表單需提供**：
+- 使用場景描述
+- Table data size、預期資料成長量、資料 retention → 平台提供**公式**讓使用者估算最大資料量
+- Peak QPS、預期 query performance、ingestion throughput → 平台以**公式**推算適合的規格（tier）
+- Table schema 與 query pattern → 平台審核 schema 正確性
+
+**Staging 驗證流程**（審核通過後、正式開通前）：
+1. 使用者租借平台提供的 staging 環境
+2. 灌測試資料，兩種方式：(a) 產生大量假資料（量級必須與申報資料量相符）；(b) 平台提供機制從 production lakehouse 灌資料過來測
+3. 使用者提交測試報告：**peak QPS 下是否達到預期 query performance**
+4. 測試通過 → 開單由平台開通正式環境（shared 或 dedicated）
+
+### Zone 資料管理模型（2026-07-13，自草稿整理；適用範圍待確認）
+Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
+- **tmp zone**（≈Bronze）：CDC 原始資料落地，**immutable**
+- **raw zone**（≈Silver）：解析/合併後的結構化資料
+- **curated zone**（≈Gold）：使用者以 Doris ELT（insert...select）產出的衍生資料表
+
+**Database 命名**：`{ws}_{tmp|raw|curated}_{userdefined}`
+- ⚠️ 已查證 Doris 限制（FeNameFormat）：database 名稱規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，**不允許連字號 `-`**，長度上限 64；原草稿的 `-` 分隔改為 `_`。
+- 衍生決定：ws 名稱禁用 `_` 與 `-`（僅小寫字母+數字），使 database 名稱可無歧義反解析出 ws 與 zone。
+
+**平台 pipeline 兩種模式**（皆走平台 Kafka，資料格式 jsonline）：
+1. **General CDC 模式**：固定 schema（follow IBM CDC 格式），資料直接寫入 tmp zone（immutable）；使用者再以平台提供的機制（細節待補）用 SQL（insert...select）決定如何 parse/merge，寫入 raw zone。
+2. **自定義 schema 模式**：使用者透過 web console 建立 pipeline 並設定 schema；pipeline 套用 schema 驗證，**不合 schema 的資料丟到 S3/MinIO 並告警**；合規資料直接寫入 raw zone。
+
+**Raw zone 建表審核**：raw zone 上 create table 一律經平台審核（避免錯誤設定導致效能不佳歸咎平台、事後還要幫忙 migration）；**審核通過的 raw table 才能被寫入**。
+
+**寫入通道 × cluster 類型**（草稿原文，與後續服務模式決議的對齊待確認）：
+- Shared cluster：只能走平台 pipeline，使用者無直接 load 權限；但可用 Doris ELT 產生新表（curated）。
+- Dedicated cluster：平台 pipeline 之外，若客製化需求高或資料量超過平台 Kafka 承載，可自建 pipeline 直接寫入；平台需設定保護性 config 防止 cluster 被打壞，並配告警機制提早預警。
+
+### HA 架構（2026-07-13，自草稿整理）
+- Active-standby 架構，以 **CCR（cross-cluster replication）** 同步
+- 搭配 failover 機制避免資料遺失
+
 ### Ingestion Pipeline
 - 平台提供：batch 匯入 + streaming（CDC on Kafka），**僅限 managed 模式**使用，為 managed 的唯一寫入通道。
 - Self-managed 使用者一律自行寫入，不開放使用平台 pipeline（責任邊界最乾淨）。

@@ -27,9 +27,25 @@
   - 錯誤訊息是否可能洩漏他 ws 物件存在性（例如查詢不存在 vs 無權限的錯誤是否可區分）
 
 ### 3. 運算資源隔離（Compute）
-- **Shared cluster**（tier 1，僅 managed）：每個 ws 一個 Doris Workload Group，限制 CPU/記憶體占比與查詢併發數；瞬間爆量由併發上限兜底（對齊 Max QPS 決議）。
-  - 設計選項（實作時評估）：以 Doris resource tag 將不同 ws 的資料副本釘到不同 BE 群組，達成更強的實體隔離——代價是 shared pool 利用率下降。
+
+> 完整選型分析與參數配置見 [RFC-002：Shared Cluster 資源隔離機制](../rfc/RFC-002-shared-cluster-resource-isolation.md)。環境為 Doris 4.1.0，下列能力皆可用（實作時以 4.x 官方文件為準逐項驗證）。
+
 - **Dedicated cluster**（tier 2/3）：cluster 即隔離邊界；cluster 內不再細分（self-managed 使用者可自行運用 workload group）。
+- **Shared cluster**（tier 1，僅 managed）：採**多層防線**，單一機制皆不足以保證 P99：
+
+| 層 | 機制 | 說明 |
+|----|------|------|
+| 1. 查詢准入 | Workload Group `max_concurrency` + `max_queue_size` + `queue_timeout`（per-ws） | 超過併發先排隊再拒絕；瞬間爆量的兜底（對齊 Max QPS 決議） |
+| 1. 查詢准入 | **Gateway/proxy 層**（平台自建） | per-ws QPS 計量（5 分鐘滑動窗口）與限流——Doris 無原生 QPS 配額；順帶統一連線端點（tier 遷移不換線） |
+| 2. 執行資源 | Workload Group `cpu_hard_limit`（硬限制，不用 cpu_share 軟限制） | 軟限制在鄰居爆量時保不住 P99 |
+| 2. 執行資源 | Workload Group `memory_limit` + `enable_memory_overcommit=false` + spill to disk | 大查詢落盤而非 OOM 拖垮 BE |
+| 2. 執行資源 | 掃描 IO 限速（`read_bytes_per_second`）+ scan 線程數限制 | 防止單租戶吃光磁碟頻寬——最易被忽略的一層 |
+| 3. 防呆兜底 | Workload Schedule Policy：自動 kill 超時/掃描量超標查詢 | Runaway query 自動處決 |
+| 3. 防呆兜底 | SQL Block Rule：限制單查詢可掃 partition/tablet 數 | 強迫帶分區條件；規則寫入對外使用規範 |
+| 4. 寫入側 | 平台 pipeline 統一控制：per-ws 消費限速、merge SQL 錯峰排程、批次大小治理 | Shared 只有 managed、寫入全走 pipeline——壓力源頭在平台手上；同時治理 compaction 壓力（高頻小批量寫入的隱形殺手） |
+| 5. 實體隔離（選配） | Resource tag 將 ws 資料副本釘到指定 BE 群組 | 隔離最強（page cache/compaction 都分開）但每群組至少 3 BEs，pool 利用率大降；保留給 shared 內大租戶或 shared→dedicated 中繼形態，tier 1 預設不用 |
+
+- **已知無法完全隔離的共用點**（誠實揭露）：FE（metadata/連線管理）、page cache、compaction 線程池。故 tier 1 規範保守（shared 規範較緊原則），並保留升級 dedicated 的明確路徑。
 
 ## 佈建原語（供 workspace-application 佈建流程呼叫）
 

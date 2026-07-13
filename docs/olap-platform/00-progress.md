@@ -130,6 +130,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 - **未來 roadmap（2026-07-13 補充）**：可能提供 lakehouse → Doris 的灌資料通道（正式 ingestion 路徑，非僅 staging 測試用）。設計 batch pipeline 時應預留來源擴充空間；staging 的 lakehouse 匯入機制可視為此通道的前身。
 
 ### 基礎建設
+- **Doris 版本：4.1.0**（2026-07-13 確認）——2.1+ 的隔離能力（cpu_hard_limit、掃描 IO 限速、workload schedule policy）皆可用。
 - 非自建機房（私有雲），服務位於 private network。
 - 硬體 pool 為**浮動**，視當下採購狀況而定；初期參考值：512 cores / 1024GB memory / 3.84TB SSD × 16。
 - 因硬體浮動，容量規劃（Phase 5）與架構文件（Phase 8）應以「單位租戶資源模型」描述，而非綁定總量數字。
@@ -145,6 +146,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 5. 敏感資料/PII 的平台責任範圍尚未明確定義。
 6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；**(d) self-managed 代操作的計費方式仍未決**（Phase 5 處理）。
 7. **Managed 的 DDL 治理模式**：方案 A（ws owner approve + 平台選配建議）vs 方案 B（平台審核，raw 嚴審/curated 免審）——**待 PM/管理層決定**；申請時投影片 schema 是否平台審核同屬此決策。
+8. Shared cluster 資源隔離機制 → **RFC-002 草稿已完成**（建議：多層防線＝workload group 硬限制 + 自建 gateway + kill policy + 寫入側治理），待會簽核准。
 
 ## Decision Log
 | 日期 | 事項 | 決議 | 決策者 |

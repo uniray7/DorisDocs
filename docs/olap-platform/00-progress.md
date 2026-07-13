@@ -59,7 +59,7 @@
 
 ### 申請流程（2026-07-13 補充）
 平台有**兩個獨立的申請流程**：
-1. **Workspace 申請流程**（所有使用者）——申請開通 workspace，含服務模式選擇、tier 判定、佈建。
+1. **Workspace 申請流程**（所有使用者）——申請開通 workspace，含服務模式選擇、tier 判定、佈建。**純人工、無自動化 API**（2026-07-13 決議）：平台提供投影片 template，使用者填入必要資訊，於每週三申請會議報告，平台審核後以內部工單執行佈建；狀態以人工追蹤表維護。
 2. **Database/Table 申請流程**（僅 managed）——workspace 開通後，managed 使用者對 database/table 的 create/delete/alter 都走此流程：提交申請（schema、用途、預估量）→ 平台審核（schema 品質把關）→ 核准後由平台執行。Self-managed 使用者不適用（自行下 DDL）。
 
 ### 申請審核與 staging 驗證細節（2026-07-13，自使用者早期草稿整理）
@@ -157,6 +157,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | Streaming format | 固定三種 message format：generic CDC event、DB2 JSON CDC、DB2 XML CDC（後兩者規格見內部文件） | uniray7 |
 | 2026-07-13 | 自定義 schema 模式取消 | 被三種固定 format 取代；所有 streaming 統一落 tmp → 使用者 SQL parse/merge 進 raw；驗證失敗資料稱 corrupted data（MinIO 路徑），觸發條件為 format 驗證失敗 | uniray7 |
 | 2026-07-13 | Corrupted data 命名 | Format 驗證失敗的資料統一稱 **corrupted data**（不用 dead-letter），存放於 MinIO 指定路徑（per-ws prefix） | uniray7 |
+| 2026-07-13 | 申請流程純人工 | Workspace 申請（含 staging 租借/報告審核）無自動化 API：投影片 template + 每週三申請會議 + 人工追蹤表；API 留作未來 roadmap | uniray7 |
 
 ## 試點回饋（Phase 9）
 

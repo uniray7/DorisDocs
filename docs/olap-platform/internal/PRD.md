@@ -62,7 +62,7 @@
 ## 6. 核心功能大綱
 > Phase 3 逐項展開成 `feature-specs/<slug>.md`，此處放連結。
 
-1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——使用者提交需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），平台以公式推算 tier 並審核。
+1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——**純人工流程**：使用者依投影片 template 填入需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），於每週三申請會議報告，平台以公式推算 tier 並審核；無自動化 API（留作 roadmap）。
 2. **Staging 驗證**（feature-specs/staging-validation.md）——申請核准後租借固定小規格的 staging 試用環境、灌測試資料（假資料或自 lakehouse 匯入）、提交設計合理性報告（效能數據僅供參考），通過才開通正式環境。
 3. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
 4. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。

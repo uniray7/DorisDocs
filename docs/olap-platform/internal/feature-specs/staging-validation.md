@@ -55,24 +55,24 @@
   - **設計有疑慮**（例如小規模就明顯超時、query pattern 與 schema 不匹配）→ 退回 STAGING_TESTING 調整重測；若判定是規模預估錯誤 → 退回 UNDER_REVIEW 重新定 tier
 - 正式環境的實際效能以上線後的監控為準（quota-and-usage）；staging 報告不構成平台的效能承諾。
 
-## API 邏輯
+## 作業方式（人工）
 
-| Method | Path | 說明 | 呼叫者 |
-|--------|------|------|--------|
-| POST | `/api/v1/workspace-applications/{id}/staging` | 申請佈建 staging（APPROVED 後） | 申請者 |
-| GET | `/api/v1/workspace-applications/{id}/staging` | 查詢 staging 狀態/租期 | 申請者 |
-| POST | `/api/v1/workspace-applications/{id}/staging/extension` | 申請延長租期（限一次） | 申請者 |
-| POST | `/api/v1/workspace-applications/{id}/test-report` | 提交測試報告 | 申請者 |
-| POST | `/api/v1/workspace-applications/{id}/test-report/review` | 審核報告（pass / fail-retest / fail-rereview） | 平台管理員 |
+> 申請流程無自動化 API（2026-07-13 決議），staging 相關作業一律人工：
 
-### 錯誤碼
-| HTTP | 錯誤碼 | 情境 |
-|------|--------|------|
-| 409 | `APPLICATION_NOT_APPROVED` | 申請未達 APPROVED 就申請 staging |
-| 409 | `STAGING_EXPIRED` | 租期已過，需重新申請或已被回收 |
-| 409 | `EXTENSION_ALREADY_USED` | 延長次數已用完 |
-| 422 | `STAGING_QUOTA_EXCEEDED` | 灌入量超過 staging 環境容量上限 |
-| 422 | `REPORT_INCOMPLETE` | 測試報告缺必填項目 |
+| 作業 | 方式 |
+|------|------|
+| Staging 租借 | 申請核准後，平台團隊開內部工單佈建，交付連線資訊給申請者 |
+| 租期延長（限一次） | 申請者向平台聯絡窗口提出，平台更新追蹤表 |
+| 測試報告提交 | 申請者依報告範本（文件/投影片）提交，可於週三會議報告或 email 送審 |
+| 報告審核 | 平台團隊審核，結論（pass / 重測 / 重審 tier）記入申請追蹤表並通知申請者 |
+
+人工檢核清單（對應原自動驗證規則）：
+- 申請未達 APPROVED 不受理 staging 租借
+- 租期已過即回收（回收前通知）；延長以一次為限
+- 灌入量超過 staging 容量上限時要求清理
+- 報告缺必填項目退回補件
+
+> 未來自動化（roadmap）：申請量成長後再實作 staging 租借/報告提交 API，本期不做。
 
 ## 與其他功能的依賴關係
 - 上游：workspace-application（APPROVED 狀態）；schema 來自申請時審核結果。

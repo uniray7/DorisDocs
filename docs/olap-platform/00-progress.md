@@ -7,7 +7,7 @@
 | 1 脈絡傾倒 | 完成 | 2026-07-13 |
 | 2 骨架生成 | 完成 | 2026-07-13 |
 | 2.5 名詞與範圍對齊 | 完成 | 2026-07-13 |
-| 3 分塊細化 | 進行中（2/10：workspace-application, staging-validation） | |
+| 3 分塊細化 | 進行中（3/10：workspace-application, staging-validation, workspace-isolation） | |
 | 4 邊界審查 | 未開始 | |
 | 5 非功能需求/SLA | 未開始 | |
 | 6 治理與合規審查 | 未開始 | |

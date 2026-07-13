@@ -56,7 +56,7 @@
 
 - **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`／`curated`（建表經治理流程核准後由平台系統代執行；核准者依待拍板的治理模式）。
 - **Streaming pipeline**：使用者以固定 format 打 message 進平台 Kafka，支援三種 format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；格式錯誤的資料進 corrupted data 區（MinIO）並告警，不中斷匯入。
-- **Batch pipeline**：規格細化中；介面預留未來 lakehouse → Doris 通道的擴充。
+- **Batch pipeline**：使用者上傳檔案至平台儲存的 landing 路徑，排程/手動觸發匯入，與 streaming 走同一套落地與治理路徑；來源介面預留未來 lakehouse → Doris 通道的擴充（規格草稿多處假設待確認）。
 - **高可用**：active-standby 架構 + cross-cluster replication + failover（具體 RPO/RTO 待量化）。
 
 ## 六、已定案的關鍵決策（節錄）
@@ -95,6 +95,6 @@
 | 項目 | 狀態 |
 |------|------|
 | PRD 大綱 + 術語 + 範圍 | ✅ 完成 |
-| 功能規格（10 項） | 進行中 5/10：申請流程、staging、多租戶隔離、tier 分配、streaming pipeline 已完成草稿 |
-| 未完成規格 | batch pipeline、database/table 申請、self-managed 營運支援、配額可視化、帳號權限 |
+| 功能規格（10 項） | 進行中 6/10：申請流程、staging、多租戶隔離、tier 分配、streaming pipeline、batch pipeline（多處假設待確認）已完成草稿 |
+| 未完成規格 | database/table 申請、self-managed 營運支援、配額可視化、帳號權限 |
 | 後續階段 | 邊界審查（QA 視角）→ NFR/SLA 量化 → 治理合規 → 利害關係人會簽 → 產出架構文件與對外文件 |

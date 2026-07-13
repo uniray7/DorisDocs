@@ -20,15 +20,16 @@
 
 ### 申請表單
 申請者填寫：
-1. Workspace 名稱（公司內唯一，命名規則：`^[a-z][a-z0-9-]{2,30}$`）
+1. Workspace 名稱（公司內唯一，命名規則：`^[a-z][a-z0-9]{2,20}$`——僅小寫字母+數字，**禁用 `-` 與 `_`**：ws 名稱會組成 Doris database 名 `{ws}_{zone}_{userdefined}`，Doris 不允許 `-` 且 `_` 保留為分隔符）
 2. **服務模式**（managed / self-managed）——表單需並列兩種模式的責任分工說明，並明示**申請後不可轉換**；選 self-managed 且預估規模落在 tier 1 時，前端即時提示「self-managed 限定 dedicated cluster，將以 tier 2 起配（成本較高）」
 3. 成本中心代碼
 4. 團隊聯絡人（至少兩位：主要/備援）
-5. 預估**來源原始資料量**（用於 tier 判定，上線後配額改以壓縮後占用計）
-6. 預估 Max QPS（5 分鐘滑動窗口平均）
-7. 使用情境描述（自由文字，審核參考）
-8. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
-9. 預計匯入方式（managed：平台 batch / 平台 streaming；self-managed：一律自寫，此欄位隱藏）
+5. 容量估算三要素：目前 table data size、預期資料成長量、資料 retention → 表單內建**公式**自動算出最大資料量（用於 tier 判定；上線後配額改以壓縮後占用計）
+6. 效能需求三要素：peak QPS（5 分鐘滑動窗口平均）、預期 query performance（目標延遲）、ingestion throughput → 平台以**公式**推算建議規格
+7. Table schema 與 query pattern（附件或結構化輸入——平台審核 schema 正確性的依據；managed 模式此處審過的 schema 即為 raw zone 初始建表申請）
+8. 使用情境描述（自由文字，審核參考）
+9. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
+10. 預計匯入方式（managed：平台 streaming general CDC / streaming 自定義 schema / batch；self-managed：一律自寫，此欄位隱藏）
 
 ### 送出後
 - 顯示申請編號與目前狀態；狀態變更時通知申請者（管道待定：email / 公司 IM）。
@@ -85,13 +86,19 @@
 ```
 SUBMITTED
   → PENDING_COST_CENTER_CONFIRMATION   （成本中心負責人確認中）
-  → UNDER_REVIEW                        （平台審核中；含 PII 者需完成合規會簽）
+  → UNDER_REVIEW                        （平台審核：規模公式推算 + schema/query pattern 審核；含 PII 者需完成合規會簽）
   → CHANGES_REQUESTED ──(申請者補件)──→ UNDER_REVIEW
   → REJECTED                            （終態，附原因；可重新申請）
   → APPROVED
+  → STAGING_PROVISIONED                 （staging 環境租借給申請者）
+  → STAGING_TESTING                     （申請者灌測試資料：自產假資料或自 production lakehouse 匯入，量級須與申報相符）
+  → TEST_REPORT_REVIEW                  （平台審核測試報告：peak QPS 下是否達到預期 query performance）
+      ├─ 未達標 → STAGING_TESTING       （調整 schema/規模預估後重測；必要時退回 UNDER_REVIEW 改 tier）
+      └─ 通過 ↓
   → PROVISIONING / WAITING_FOR_CAPACITY （tier 2/3 硬體不足時）
-  → ACTIVE                              （交付完成，workspace 生效）
+  → ACTIVE                              （交付完成，workspace 生效；staging 環境回收）
 ```
+> Staging 驗證的細節（租借期限、假資料產生工具、lakehouse 匯入機制、報告格式）見 [staging-validation.md](staging-validation.md)。
 
 ### Workspace 生命週期狀態機（申請完成後）
 ```

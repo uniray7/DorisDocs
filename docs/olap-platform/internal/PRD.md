@@ -30,7 +30,11 @@
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
 | Batch Ingestion | 平台提供的批次匯入通道（僅 managed）。 | |
 | Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入（僅 managed）。 | |
-| Database/Table 申請 | Managed 模式下的 DDL 治理流程：使用者提交 database/table 的 create/alter/delete 申請（含 schema、用途、預估量），平台審核（schema 品質把關）後**由平台代為執行**。 | Self-managed 不適用（自行下 DDL）；與 workspace 申請是兩條獨立流程 |
+| Database/Table 申請 | Managed 模式下的 DDL 治理流程：使用者提交 database/table 的 create/alter/delete 申請（含 schema、用途、預估量），平台審核（schema 品質把關）後**由平台代為執行**。**Raw zone 建表人工嚴審；curated zone 免審**（計入儲存配額）。 | Self-managed 不適用（自行下 DDL）；與 workspace 申請是兩條獨立流程 |
+| Zone | Managed 模式的資料分層模型：**tmp**（CDC 原始落地，immutable，平台管理）→ **raw**（解析/合併後結構化資料，建表嚴審）→ **curated**（使用者 ELT 產出，免審）。對應 Databricks Bronze/Silver/Gold。 | 僅 managed 適用；self-managed 不分 zone |
+| Database 命名 | `{ws}_{tmp\|raw\|curated}_{userdefined}`；Doris database 名稱不允許 `-`（規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，上限 64 字元），故以 `_` 分隔，ws 名稱僅小寫字母+數字。 | 僅 managed（self-managed 命名自由） |
+| Staging 環境 | 正式開通前的驗證環境：使用者租借後灌入與申報量級相符的測試資料（自產假資料或自 production lakehouse 匯入），提交 peak QPS 效能測試報告，通過才開通正式環境。 | |
+| CCR | Cross-cluster replication，active-standby HA 架構的同步機制，搭配 failover 避免資料遺失。 | |
 | FE / BE | Doris 的 Frontend（查詢規劃/metadata）與 Backend（儲存/運算）節點。 | 對外文件不使用此術語 |
 
 ## 5. 範圍（In-scope / Out-of-scope）
@@ -52,15 +56,16 @@
 ## 6. 核心功能大綱
 > Phase 3 逐項展開成 `feature-specs/<slug>.md`，此處放連結。
 
-1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——使用者提交需求（服務模式、資料量、QPS 預估、成本歸屬），平台審核並佈建。
-2. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
-3. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
-4. **Batch ingestion pipeline**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理（僅 managed）。
-5. **Streaming ingestion pipeline（CDC on Kafka）**（feature-specs/streaming-ingestion.md）——CDC 接入、schema 對應、延遲與失敗行為（僅 managed）。
-6. **Database/Table 申請流程**（feature-specs/database-table-application.md）——managed 模式下 database/table 的 create/alter/delete 申請、schema 品質審核、核准後由平台代為執行。與 workspace 申請是兩條獨立流程。
-7. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、scale in/out 代操作申請與成本反映。
-8. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
-9. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異）；row/column filter 是否納入依 RFC 決議。
+1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——使用者提交需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），平台以公式推算 tier 並審核。
+2. **Staging 驗證**（feature-specs/staging-validation.md）——申請核准後租借 staging、灌入申報量級的測試資料（假資料或自 lakehouse 匯入）、提交 peak QPS 效能報告，通過才開通正式環境。
+3. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
+4. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
+5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（feature-specs/streaming-ingestion.md）——兩種模式：(a) general CDC（固定 schema，落 tmp zone，使用者以 SQL parse/merge 進 raw）；(b) 自定義 schema（web console 設定，schema 驗證失敗落 S3/MinIO 並告警，直寫 raw）。
+6. **Batch ingestion pipeline（僅 managed）**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理。
+7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——raw zone 建表人工嚴審、curated 免審計配額、核准後由平台代為執行。與 workspace 申請是兩條獨立流程。
+8. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、保護性 config、scale in/out 代操作申請與成本反映。
+9. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
+10. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異：managed 無直接 load/DDL 權限）；row/column filter 是否納入依 RFC 決議。
 
 ## 7. 多租戶與資源隔離模型
 > 要填：workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Tier 草案（門檻待 RFC 修正）：
@@ -82,6 +87,8 @@
 ## 8. 非功能需求（Phase 5 補上）
 > 要填：可用性、查詢延遲 P95/P99、寫入吞吐、擴容機制、計費模式、備援/DR。
 > 注意：硬體 pool 浮動（視採購狀況），容量以「單位租戶資源模型」描述，不綁定總量。
+> 已知方向（自草稿）：HA 採 active-standby 架構，以 CCR 同步 + failover 機制避免資料遺失（適用範圍與 RPO/RTO 待 Phase 5 量化）。
+> 使用規範鬆緊：shared cluster 規範較緊（保護鄰居租戶）；dedicated 較寬鬆（僅防 cluster 整體不穩／no response）。
 
 ## 9. 治理與合規（Phase 6 補上）
 > 要填：資料分類與 PII 責任範圍（open issue #5）、RBAC 設計、稽核紀錄、安全審查結論。

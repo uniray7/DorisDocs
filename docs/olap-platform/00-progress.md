@@ -91,9 +91,12 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 
 **Raw zone 建表審核**：raw zone 上 create table 一律經平台審核（避免錯誤設定導致效能不佳歸咎平台、事後還要幫忙 migration）；**審核通過的 raw table 才能被寫入**。
 
-**寫入通道 × cluster 類型**（草稿原文，與後續服務模式決議的對齊待確認）：
-- Shared cluster：只能走平台 pipeline，使用者無直接 load 權限；但可用 Doris ELT 產生新表（curated）。
-- Dedicated cluster：平台 pipeline 之外，若客製化需求高或資料量超過平台 Kafka 承載，可自建 pipeline 直接寫入；平台需設定保護性 config 防止 cluster 被打壞，並配告警機制提早預警。
+**寫入通道 × cluster 類型**（已對齊，2026-07-13 決議）：
+- 寫入通道由**服務模式**決定，與 cluster 類型無關：managed（不論 shared/dedicated）只走平台 pipeline、無直接 load 權限，可用 Doris ELT 產 curated 表；self-managed 一律自建 pipeline 直接寫入。
+- 草稿中「dedicated 可自建 pipeline」情境即為 self-managed 模式；資料量超過平台 Kafka 承載或高客製需求的使用者應申請 self-managed。
+- Self-managed cluster 平台仍需設定保護性 config 防止 cluster 被打壞，並配告警機制提早預警（屬 self-managed 營運支援範疇）。
+- **Zone 模型（含 raw 建表審核）僅適用 managed**；self-managed 不分 zone、不審表。
+- Managed 的 DDL 審核精緻化：**raw zone 建表嚴審（人工），curated zone（ELT 產出）免審**但計入儲存配額；tmp zone 由平台管理（CDC 落地，使用者不建表）。
 
 ### HA 架構（2026-07-13，自草稿整理）
 - Active-standby 架構，以 **CCR（cross-cluster replication）** 同步
@@ -131,6 +134,10 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | 模式轉換 | 不可事後轉換；要換模式需開新 ws 搬資料 | uniray7 |
 | 2026-07-13 | Managed 資料管理責任 | 含備份還原、保留與清除政策、效能調校、schema 品質把關（DDL 審核）四項 | uniray7 |
 | 2026-07-13 | Pipeline 開放範圍 | 平台 ingestion pipeline 僅限 managed；self-managed 一律自寫 | uniray7 |
+| 2026-07-13 | 寫入通道對齊 | 通道由服務模式決定、與 cluster 類型無關；不採 hybrid（managed+dedicated 不可另自建 pipeline） | uniray7 |
+| 2026-07-13 | Zone 模型範圍 | tmp/raw/curated 與 raw 建表審核僅適用 managed；self-managed 不分 zone、不審表 | uniray7 |
+| 2026-07-13 | DDL 審核精緻化 | Raw zone 建表人工嚴審；curated（ELT 產出）免審但計儲存配額；tmp 由平台管理 | uniray7 |
+| 2026-07-13 | Database 命名 | `{ws}_{tmp\|raw\|curated}_{userdefined}`，分隔用 `_`（Doris 不允許 `-`）；ws 名稱僅小寫字母+數字 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

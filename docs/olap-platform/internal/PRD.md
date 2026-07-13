@@ -14,13 +14,38 @@
 ## 3. 目標使用者與使用情境
 > 要填：後端工程師（會寫 SQL）為主，多來自 lakehouse 環境。代表情境：(a) 部門申請 workspace 並匯入資料做分析、(b) 以 CDC 接上游 DB 做準即時報表、(c) 大量批次資料的定期分析。
 
-## 4. 術語表（Phase 2.5 補上）
-| 名詞 | 定義 |
-|------|------|
-| （待 Phase 2.5） | |
+## 4. 術語表
+| 名詞 | 定義 | 易混淆處 |
+|------|------|----------|
+| Workspace (ws) | 租戶單位，對應一個申請部門/團隊。資料、metadata、運算資源的隔離邊界。 | ⚠️ 對應粒度待定：部門 vs 團隊 vs 成本中心 |
+| Shared Cluster | 多個 tier 1 workspace 共用的 Doris cluster，以 resource group 隔離運算。 | 資料仍完全隔離，「共用」僅指硬體 |
+| Dedicated Cluster | 單一 workspace 專屬的 Doris cluster（tier 2 以上）。 | |
+| Tier | Workspace 的資源等級（1/2/3），由 data volume 與 QPS 決定（門檻待 RFC-001 修正）。 | 儲存與運算是否解耦待決 |
+| Resource Group | Doris 的運算資源隔離機制，用於 shared cluster 內限制單一 ws 的 CPU/記憶體用量。 | 不是資料隔離機制 |
+| Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | ⚠️ 各項計量定義待定（見下方待確認） |
+| Data Volume | Workspace 占用的儲存量。 | ⚠️ 計量基準待定：Doris 壓縮後 vs 來源原始大小 |
+| Max QPS | Workspace 的查詢速率上限。 | ⚠️ 計量方式待定：瞬時峰值 vs 滑動窗口平均 |
+| Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。 | |
+| Batch Ingestion | 平台提供的批次匯入通道。 | |
+| Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入。 | |
+| Self-write | 使用者繞過平台 pipeline、自行寫入 Doris 的通道。 | 責任邊界待 RFC-002 |
+| FE / BE | Doris 的 Frontend（查詢規劃/metadata）與 Backend（儲存/運算）節點。 | 對外文件不使用此術語 |
 
 ## 5. 範圍（In-scope / Out-of-scope）
-> 要填：Phase 2.5 與術語表一起對齊。已知 out-of-scope：資料遷移、跨 ws 分享、OLTP。
+
+### In-scope
+- Workspace 生命週期：申請、審核、佈建、（升降級）、停用
+- 多租戶隔離：資料、metadata、運算三層
+- Ingestion pipeline：batch + streaming（CDC on Kafka）
+- 自寫入通道的開放與管理（依 RFC-002 決議）
+- 使用者側的配額/用量可視化
+- Workspace 內帳號與存取控制
+
+### Out-of-scope
+- **既有資料遷移**（Oracle/HBase → Doris 由各團隊自理）：平台聚焦服務本體，遷移工具成本高且一次性
+- **跨 workspace 資料分享/存取**：與 lakehouse 習慣不同，明確不支援；有共享需求應在 lakehouse 層解決
+- **OLTP 工作負載**：Doris 定位為分析型查詢，不承接交易型場景
+- **BI 工具託管**：平台提供查詢介面，BI 工具由使用者自備（如需連線支援僅提供文件）
 
 ## 6. 核心功能大綱
 > Phase 3 逐項展開成 `feature-specs/<slug>.md`，此處放連結。

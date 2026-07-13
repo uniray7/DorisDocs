@@ -44,9 +44,22 @@
   | 2 | 500GB – 5TB | 20 – 100 | Small dedicated（3 BEs，16C/64GB/3.84TB SSD×2） |
   | 3 | 5TB – 30TB | 100 – 500 | Medium dedicated（5–10 BEs，32C/128GB/3.84TB SSD×4） |
 
+### 服務模式（2026-07-13 補充，取代原「自寫入」議題）
+平台提供兩種服務模式，責任邊界以模式劃分：
+
+| | Self-managed | Managed |
+|---|---|---|
+| DDL 自由度 | 自行 create/delete/alter table | create/delete/alter table、database 需跑 approve 流程 |
+| 資料寫入 | 可自行灌資料 | 走平台 ingestion pipeline |
+| 平台責任 | 僅系統異常告警；scale in/out 可代操作（反映成本） | 平台負資料管理責任 |
+| 資料管理責任 | 使用者自負 | 平台承擔 |
+
+- Self-managed 給高自由度使用者；平台責任限縮為異常告警 + 付費代操作。
+- Managed 有規範約束（DDL approve 流程），換取平台承擔資料管理責任。
+
 ### Ingestion Pipeline
-- 平台提供：batch 匯入 + streaming（CDC on Kafka）。
-- 允許有能力/高客製需求的使用者**自行寫入**——但自寫入的資料管理與責任歸屬**尚未釐清**。
+- 平台提供：batch 匯入 + streaming（CDC on Kafka），為 managed 模式的標準（唯一？待確認）寫入通道。
+- Self-managed 使用者可自行寫入，也應可選用平台 pipeline（待確認）。
 
 ### 基礎建設
 - 非自建機房（私有雲），服務位於 private network。
@@ -58,10 +71,11 @@
 
 ### 待決事項（Open Issues，候選 RFC 題目）
 1. Tier 門檻：data volume 與 QPS 綁在同一 tier 不合理，考慮拆成儲存/運算兩條獨立軸，取較高者定 tier。
-2. 自寫入（bypass 平台 pipeline）使用者的資料管理與責任歸屬。
+2. ~~自寫入使用者的資料管理與責任歸屬~~ → **已由服務模式（self-managed / managed）解決**（2026-07-13），細節待 Phase 3 展開。
 3. Row filter / column filter（使用者已提出需求）：做在平台側還是使用者自理，未決。
 4. 超過 tier 3（>30TB 或 >500 QPS）的使用者如何處理。
 5. 敏感資料/PII 的平台責任範圍尚未明確定義。
+6. 服務模式衍生待確認：(a) self-managed 是否限定 dedicated cluster（tier 2+）？(b) 模式可否事後轉換？(c) managed 的「資料管理責任」具體範圍（備份/保留/效能調校/schema 品質）？(d) self-managed 代操作的計費方式。
 
 ## Decision Log
 | 日期 | 事項 | 決議 | 決策者 |

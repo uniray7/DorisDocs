@@ -13,7 +13,7 @@
 ## 隔離模型：三層
 
 ### 1. 資料隔離（Data）
-- 每個 ws 擁有專屬的 Doris databases（managed：`{ws}__{user_defined}__{tmp|raw|curated}`；self-managed：dedicated cluster 整座即邊界，命名自由）。
+- 每個 ws 擁有專屬的 Doris databases。命名自由度跟著**服務模式**走、與 cluster 類型無關：managed（不論 shared 或 dedicated）一律遵循 `{ws}__{user_defined}__{tmp|raw|curated}`（平台自動化與 zone 治理依賴此慣例，且 tier 升級時 database 名不變）；self-managed 命名自由（平台不解析其結構，僅做 cluster 層級告警）。
 - 授權以 **Doris GRANT 到 database 層級**實作：ws 帳號僅被授予自己 ws databases 的權限，無任何跨 ws 授權路徑。
 - **跨 ws 分享明確不支援**：平台不提供任何跨 ws GRANT 的申請管道；有共享需求應在 lakehouse 層解決（對外文件需前置溝通，使用者多來自習慣跨 ws 的 lakehouse）。
 - Managed 附屬資源同樣按 ws 隔離：Kafka topic（per-ws + ACL）、schema 驗證失敗的 S3/MinIO dead-letter bucket/prefix（per-ws）。

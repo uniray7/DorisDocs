@@ -146,6 +146,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | Database 命名 | ~~`{ws}_{tmp\|raw\|curated}_{userdefined}`~~ → 修訂為 `{ws}__{user_defined}__{tmp\|raw\|curated}`（雙底線分隔、zone 置尾）；ws 名稱僅小寫字母+數字；user_defined 可含單底線、不可含 `__` | uniray7 |
 | 2026-07-13 | Staging 定位 | 固定小規格試用環境（機器不足以對齊 tier）；效能數據僅供參考不可外推，審核重點為設計合理性 | uniray7 |
 | 2026-07-13 | Staging PII | Lakehouse 真實資料進 staging 的 PII 風險經評估忽略 | uniray7 |
+| 2026-07-13 | 命名自由度歸屬 | 命名自由僅限 self-managed（跟服務模式走）；managed 不論 shared/dedicated 一律遵循 zone 命名慣例 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

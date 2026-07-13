@@ -41,10 +41,12 @@
 - 申請聲明含 PII 時，需完成安全/合規會簽才能核准（銜接 PRD § 9）。
 
 ### 佈建與交付
-- 核准後系統自動佈建：
-  - Tier 1：在 shared cluster 建立 database + resource group + 初始帳號
-  - Tier 2/3：於資源池開立 dedicated cluster（若當下硬體不足，狀態停在「等待資源」並通知申請者預計時間）
-- 完成後交付：連線資訊、初始管理帳號、配額明細、快速開始文件連結。
+- Staging 測試通過後系統自動佈建：
+  - Tier 1（必為 managed）：在 shared cluster 建立 zone databases（`{ws}_tmp_*`／`{ws}_raw_*`／`{ws}_curated_*`）+ resource group + 初始帳號；申請時審核通過的 schema 直接作為 raw zone 初始建表執行
+  - Tier 2/3 managed：開立 dedicated cluster，其餘同上
+  - Tier 2/3 self-managed：開立 dedicated cluster + 保護性 config + 告警接線 + 初始帳號（不建 zone databases，命名自由）
+  - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間
+- 完成後交付：連線資訊、初始管理帳號、配額明細、快速開始文件連結（依模式給對應文件：managed 給 pipeline/DDL 申請指南，self-managed 給責任歸屬與告警說明）。
 
 ## API 邏輯
 
@@ -60,18 +62,30 @@
 ### Request（POST /workspace-applications）
 ```json
 {
-  "name": "ads-analytics",
+  "name": "adsanalytics",
   "service_mode": "managed",
   "cost_center": "CC-1042",
   "contacts": ["alice@corp", "bob@corp"],
-  "estimated_raw_volume_gb": 800,
-  "estimated_max_qps": 50,
+  "capacity_estimate": {
+    "current_table_size_gb": 500,
+    "monthly_growth_gb": 50,
+    "retention_months": 6
+  },
+  "performance_requirements": {
+    "peak_qps": 50,
+    "expected_query_latency_p95_ms": 2000,
+    "ingestion_throughput_mb_per_sec": 20
+  },
+  "table_schemas": [{ "name": "ad_events", "ddl": "CREATE TABLE ...", "query_patterns": ["按 campaign_id + 日期範圍聚合", "..."] }],
   "use_case": "廣告成效報表，取代現有 Oracle 分析庫",
   "contains_sensitive_data": false,
-  "ingestion_methods": ["batch", "streaming"]
+  "ingestion_methods": ["streaming-cdc", "batch"]
 }
 ```
-規則：`service_mode = "self-managed"` 時 `ingestion_methods` 必須為空（自寫入不需申報）；tier 判定結果最低為 2。
+規則：
+- 最大資料量由 `capacity_estimate` 三要素以公式推得，tier 由容量與效能需求共同推算（公式待 Phase 5 定案）。
+- `service_mode = "self-managed"` 時 `ingestion_methods` 必須為空（自寫入不需申報）、`table_schemas` 可免附（不審表）；tier 判定結果最低為 2。
+- `ingestion_methods` 可選值：`streaming-cdc`（general CDC）、`streaming-custom`（自定義 schema）、`batch`。
 
 ### Response（201）
 ```json
@@ -118,7 +132,9 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 | 400 | `INGESTION_NOT_ALLOWED_FOR_SELF_MANAGED` | self-managed 申請填了平台 ingestion 方式 |
 
 ## 與其他功能的依賴關係
+- 正式佈建前依賴 **Staging 驗證**（staging-validation.md）的測試報告通過。
 - 佈建動作依賴 **多租戶隔離**（database/resource group 建立）與 **Cluster tier 分配**（tier 判定規則）。
+- Managed 申請時審核的 schema 即 raw zone 初始建表，後續增修表走 **Database/Table 申請流程**（database-table-application.md）。
 - 交付的初始帳號依賴 **帳號與存取控制** 的帳號模型。
 - `ESTIMATE_EXCEEDS_MAX_TIER` 的處理依 open issue #4 決議。
 
@@ -128,8 +144,10 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 | （待 Phase 4） | | |
 
 ## 驗收標準（Acceptance Criteria）
-- [ ] 申請 → 成本中心確認 → 審核 → 佈建 → 交付全流程可在無人工介入（tier 1）下完成
+- [ ] 申請 → 成本中心確認 → 審核 → staging 驗證 → 佈建 → 交付全流程狀態機正確運轉；其中佈建與交付為全自動，人工介入僅限審核與測試報告判定
 - [ ] 每個狀態變更都通知申請者，且拒絕/退回必附原因
 - [ ] 含 PII 聲明的申請無法在未完成合規會簽前被核准
 - [ ] 同名 workspace 申請被正確拒絕
+- [ ] self-managed 申請不會被配到 shared cluster（最低 tier 2），且不含 zone databases
+- [ ] managed 佈建後 zone databases 命名符合 `{ws}_{zone}_{userdefined}` 且通過 Doris 命名檢核
 - [ ] tier 2/3 在資源不足時正確進入 WAITING_FOR_CAPACITY 並回報預估等待時間

@@ -8,11 +8,11 @@
 
 ## 2. 目標與非目標
 > 要填：
-> - 目標：提供多租戶 OLAP 查詢服務 + data ingestion pipeline，承接自 Oracle/HBase 轉移的分析型工作負載。
+> - 目標：提供多租戶 OLAP 查詢服務 + data ingestion pipeline，以 managed / self-managed 兩種模式承接自 Oracle/HBase 轉移的分析型工作負載。
 > - 非目標（已確定）：不負責既有資料遷移；不支援跨 workspace 資料分享；不承接交易型（OLTP）工作負載。
 
 ## 3. 目標使用者與使用情境
-> 要填：後端工程師（會寫 SQL）為主，多來自 lakehouse 環境。代表情境：(a) 部門申請 workspace 並匯入資料做分析、(b) 以 CDC 接上游 DB 做準即時報表、(c) 大量批次資料的定期分析。
+> 要填：後端工程師（會寫 SQL）為主，多來自 lakehouse 環境。代表情境：(a) 部門申請 managed workspace，以平台 CDC pipeline 接上游 DB 做準即時報表、(b) managed 使用者以 Doris ELT 從 raw 產出 curated 分析表、(c) 高客製/大流量團隊申請 self-managed dedicated cluster 自建 pipeline。
 
 ## 4. 術語表
 | 名詞 | 定義 | 易混淆處 |
@@ -40,12 +40,15 @@
 ## 5. 範圍（In-scope / Out-of-scope）
 
 ### In-scope
-- Workspace 生命週期：申請、審核、佈建、（升降級）、停用
+- 兩種服務模式（managed / self-managed）及其責任邊界
+- Workspace 生命週期：申請、審核、staging 驗證、佈建、（升降級）、停用
 - 多租戶隔離：資料、metadata、運算三層
-- Ingestion pipeline：batch + streaming（CDC on Kafka）
-- 自寫入通道的開放與管理（依 RFC-002 決議）
+- Managed 資料管理：zone 模型（tmp/raw/curated）、database/table 申請流程（raw 嚴審）
+- Ingestion pipeline（僅 managed）：batch + streaming（general CDC / 自定義 schema）
+- Self-managed 營運支援：異常告警、保護性 config、scale 代操作
 - 使用者側的配額/用量可視化
 - Workspace 內帳號與存取控制
+- HA（active-standby + CCR + failover）
 
 ### Out-of-scope
 - **既有資料遷移**（Oracle/HBase → Doris 由各團隊自理）：平台聚焦服務本體，遷移工具成本高且一次性

@@ -7,7 +7,7 @@
 | 1 脈絡傾倒 | 完成 | 2026-07-13 |
 | 2 骨架生成 | 完成 | 2026-07-13 |
 | 2.5 名詞與範圍對齊 | 完成 | 2026-07-13 |
-| 3 分塊細化 | 進行中（4/10：workspace-application, staging-validation, workspace-isolation, cluster-tiering） | |
+| 3 分塊細化 | 進行中（5/10：+streaming-ingestion） | |
 | 4 邊界審查 | 未開始 | |
 | 5 非功能需求/SLA | 未開始 | |
 | 6 治理與合規審查 | 未開始 | |
@@ -85,9 +85,15 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 - ⚠️ 已查證 Doris 限制（FeNameFormat）：database 名稱規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，**不允許連字號 `-`**，長度上限 64；分隔符用底線。
 - 分隔符為**雙底線 `__`**：ws 名稱禁用 `_` 與 `-`（僅小寫字母+數字）；user_defined 可含單底線、不可含 `__`、不可以底線開頭/結尾——database 名稱仍可無歧義反解析出 ws、user_defined 與 zone。
 
-**平台 pipeline 兩種模式**（皆走平台 Kafka，資料格式 jsonline）：
-1. **General CDC 模式**：固定 schema（follow IBM CDC 格式），資料直接寫入 tmp zone（immutable）；使用者再以平台提供的機制（細節待補）用 SQL（insert...select）決定如何 parse/merge，寫入 raw zone。
-2. **自定義 schema 模式**：使用者透過 web console 建立 pipeline 並設定 schema；pipeline 套用 schema 驗證，**不合 schema 的資料丟到 S3/MinIO 並告警**；合規資料直接寫入 raw zone。
+**平台 pipeline 兩種模式**（皆走平台 Kafka）：
+1. **CDC 模式**：固定 message format，資料直接寫入 tmp zone（immutable）；使用者再以平台提供的機制（細節待補）用 SQL（insert...select）決定如何 parse/merge，寫入 raw zone。
+   - **支援三種 message format**（2026-07-13 補充）：
+     | Format | 說明 |
+     |--------|------|
+     | Generic CDC event | JSON，例：`{"eventTime": "2029-10-01T12:34:56Z", "sourceName": "order_service", "operation": "INSERT", "data": "{\"col1\": \"val1\", ...}"}`（data 為字串編碼的 JSON，內容 schema 由使用者自定） |
+     | DB2 JSON CDC event | 依內部規格文件（文件不在本 repo，實作時引用） |
+     | DB2 XML CDC event | 依內部規格文件（文件不在本 repo，實作時引用） |
+2. ~~**自定義 schema 模式**~~（2026-07-13 決議**取消**，被三種固定 format 取代）：generic CDC 的 `data` 欄位可承載自定義內容，所有 streaming 資料統一落 tmp 再由使用者 SQL parse 進 raw。原「schema 驗證失敗落 S3/MinIO 並告警」機制保留，改為 **format 驗證**（非法 JSON/XML、缺必要欄位）的 dead-letter。
 
 **Raw zone 建表審核**：raw zone 上 create table 一律經平台審核（避免錯誤設定導致效能不佳歸咎平台、事後還要幫忙 migration）；**審核通過的 raw table 才能被寫入**。
 
@@ -148,6 +154,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | Staging 定位 | 固定小規格試用環境（機器不足以對齊 tier）；效能數據僅供參考不可外推，審核重點為設計合理性 | uniray7 |
 | 2026-07-13 | Staging PII | Lakehouse 真實資料進 staging 的 PII 風險經評估忽略 | uniray7 |
 | 2026-07-13 | 命名自由度歸屬 | 命名自由僅限 self-managed（跟服務模式走）；managed 不論 shared/dedicated 一律遵循 zone 命名慣例 | uniray7 |
+| 2026-07-13 | Streaming format | 固定三種 message format：generic CDC event、DB2 JSON CDC、DB2 XML CDC（後兩者規格見內部文件） | uniray7 |
+| 2026-07-13 | 自定義 schema 模式取消 | 被三種固定 format 取代；所有 streaming 統一落 tmp → 使用者 SQL parse/merge 進 raw；dead-letter 改為 format 驗證失敗 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

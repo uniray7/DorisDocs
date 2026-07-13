@@ -29,7 +29,7 @@
 7. Table schema 與 query pattern（附件或結構化輸入——平台審核 schema 正確性的依據；managed 模式此處審過的 schema 即為 raw zone 初始建表申請）
 8. 使用情境描述（自由文字，審核參考）
 9. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
-10. 預計匯入方式（managed：平台 streaming general CDC / streaming 自定義 schema / batch；self-managed：一律自寫，此欄位隱藏）
+10. 預計匯入方式（managed：streaming（三種 CDC format 擇一，可複選）/ batch；self-managed：一律自寫，此欄位隱藏）
 
 ### 送出後
 - 顯示申請編號與目前狀態；狀態變更時通知申請者（管道待定：email / 公司 IM）。
@@ -79,13 +79,13 @@
   "table_schemas": [{ "name": "ad_events", "ddl": "CREATE TABLE ...", "query_patterns": ["按 campaign_id + 日期範圍聚合", "..."] }],
   "use_case": "廣告成效報表，取代現有 Oracle 分析庫",
   "contains_sensitive_data": false,
-  "ingestion_methods": ["streaming-cdc", "batch"]
+  "ingestion_methods": ["streaming:generic-cdc", "batch"]
 }
 ```
 規則：
 - 最大資料量由 `capacity_estimate` 三要素以公式推得，tier 由容量與效能需求共同推算（公式待 Phase 5 定案）。
 - `service_mode = "self-managed"` 時 `ingestion_methods` 必須為空（自寫入不需申報）、`table_schemas` 可免附（不審表）；tier 判定結果最低為 2。
-- `ingestion_methods` 可選值：`streaming-cdc`（general CDC）、`streaming-custom`（自定義 schema）、`batch`。
+- `ingestion_methods` 可選值：`streaming:generic-cdc`、`streaming:db2-json-cdc`、`streaming:db2-xml-cdc`、`batch`。
 
 ### Response（201）
 ```json

@@ -29,7 +29,7 @@
 | Self-managed 模式 | 使用者自行管理資料的服務模式：可自行灌資料與執行 DDL。平台責任限縮為系統異常告警與付費代操作（scale in/out）。**限定 dedicated cluster（tier 2+）**。 | 平台不負資料管理責任；不可用平台 pipeline |
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
 | Batch Ingestion | 平台提供的批次匯入通道（僅 managed）。 | |
-| Streaming Ingestion | 平台提供的準即時匯入通道，CDC 資料經 Kafka 接入（僅 managed）。 | |
+| Streaming Ingestion | 平台提供的準即時匯入通道（僅 managed）：使用者以固定 format 的 message 灌進平台 Kafka，統一落 tmp zone，再以 SQL parse/merge 進 raw。支援三種 format：generic CDC event、DB2 JSON CDC、DB2 XML CDC（後兩者規格見內部文件）。 | Format 驗證失敗落 dead-letter（S3/MinIO）並告警 |
 | Database/Table 申請 | Managed 模式下的 DDL 治理流程：使用者提交 database/table 的 create/alter/delete 申請（含 schema、用途、預估量），平台審核（schema 品質把關）後**由平台代為執行**。**Raw zone 建表人工嚴審；curated zone 免審**（計入儲存配額）。 | Self-managed 不適用（自行下 DDL）；與 workspace 申請是兩條獨立流程 |
 | Zone | Managed 模式的資料分層模型：**tmp**（CDC 原始落地，immutable，平台管理）→ **raw**（解析/合併後結構化資料，建表嚴審）→ **curated**（使用者 ELT 產出，免審）。對應 Databricks Bronze/Silver/Gold。 | 僅 managed 適用；self-managed 不分 zone |
 | Database 命名 | `{ws}__{user_defined}__{tmp\|raw\|curated}`（雙底線分隔，zone 置尾）；Doris database 名稱不允許 `-`（規則 `^[a-zA-Z][a-zA-Z0-9_]*$`，上限 64 字元）。ws 名稱僅小寫字母+數字；user_defined 可含單底線、不可含 `__`、不可以底線開頭/結尾。 | 僅 managed（self-managed 命名自由） |
@@ -66,7 +66,7 @@
 2. **Staging 驗證**（feature-specs/staging-validation.md）——申請核准後租借固定小規格的 staging 試用環境、灌測試資料（假資料或自 lakehouse 匯入）、提交設計合理性報告（效能數據僅供參考），通過才開通正式環境。
 3. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
 4. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
-5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（feature-specs/streaming-ingestion.md）——兩種模式：(a) general CDC（固定 schema，落 tmp zone，使用者以 SQL parse/merge 進 raw）；(b) 自定義 schema（web console 設定，schema 驗證失敗落 S3/MinIO 並告警，直寫 raw）。
+5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（feature-specs/streaming-ingestion.md）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）統一落 tmp zone（immutable），使用者以 SQL parse/merge 進 raw；format 驗證失敗落 S3/MinIO dead-letter 並告警。
 6. **Batch ingestion pipeline（僅 managed）**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
 7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——raw zone 建表人工嚴審、curated 免審計配額、核准後由平台代為執行。與 workspace 申請是兩條獨立流程。
 8. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——系統異常告警、保護性 config、scale in/out 代操作申請與成本反映。

@@ -62,9 +62,11 @@
 
 ## Row / Column Filter（未決，open issue #3）
 
-使用者已提出需求；**做在平台側 vs 使用者自理**未決，候選 RFC 題目：
-- 若做：Doris 原生 row policy / column masking 為基礎，平台包裝設定介面；權限矩陣加一層「同 ws 內分級」。
-- 若不做：ws 內全員同權限，敏感欄位由使用者以 curated 視圖自行控制。
+**需求已具體化（2026-07-14）**：self-managed 使用者要求對其**指定的 table** 提供 **row filtering 與 column masking**（由平台代管政策）。**承接與否未決**，候選 RFC 題目：
+- 若做：Doris 原生 row policy / data masking 能力為基礎，平台包裝政策設定；使用者指定 table 與政策內容，平台系統帳號執行設定。
+- Self-managed 承接的特有難題：這會成為「cluster 內權限使用者自理」的**唯一例外**——且使用者有 DDL 自由，改表/刪表/重建後的**政策漂移**（policy 失效或漏掛）責任歸屬必須先定。
+- Managed 是否一併提供（同 ws 內分級）為同一 RFC 的延伸題。
+- 若不做：ws 內全員同權限，敏感欄位由使用者自行以視圖/表拆分控制。
 - 本 spec 先按「不做」寫權限矩陣，RFC 決議後增修。
 
 ## 行為規格

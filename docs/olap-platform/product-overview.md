@@ -25,7 +25,7 @@
 | 資料寫入 | 只走平台 pipeline（streaming CDC / batch） | 一律自建 pipeline 自行寫入 |
 | 建表/改表 | 經治理流程核准後由平台系統執行——**治理模式待拍板**（方案 A：ws owner approve、平台不審；方案 B：平台審核把關） | 完全自由（不經平台，平台不負責任） |
 | 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校；schema 品質把關是否納入平台責任＝待拍板（與治理模式連動） | **使用者自負** |
-| 平台支援 | 完整 | 僅日常 infra 告警 + 代操作（scale in/out）；其他需求提 request 由 PM 排優先權（非義務） |
+| 平台支援 | 完整 | 日常 infra 告警 + 代操作（scale in/out）+ HA（雙 cluster CCR + failover 介入協助）；其他需求提 request 由 PM 排優先權（非義務） |
 | 可用規格 | Shared 或 Dedicated cluster | 限 Dedicated cluster（tier 2 起） |
 
 ## 三、資源分級（Tier）
@@ -57,7 +57,7 @@
 - **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`／`curated`（建表經治理流程核准後由平台系統代執行；核准者依待拍板的治理模式）。
 - **Streaming pipeline**：使用者以固定 format 打 message 進平台 Kafka，支援三種 format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；格式錯誤的資料進 corrupted data 區（MinIO）並告警，不中斷匯入。
 - **Batch pipeline**：使用者上傳檔案至平台儲存的 landing 路徑，排程/手動觸發匯入，與 streaming 走同一套落地與治理路徑；來源介面預留未來 lakehouse → Doris 通道的擴充（規格草稿多處假設待確認）。
-- **高可用**：active-standby 架構 + cross-cluster replication + failover（具體 RPO/RTO 待量化）。
+- **高可用**（兩種模式皆適用）：active-standby 雙 cluster + cross-cluster replication **盡量維持同步（best-effort）** + failover 時平台介入；RPO/RTO、預設 vs 選配、**standby 資源＝約兩倍硬體**的計算方式待量化——這對容量規劃和成本的影響需要管理層知悉。
 
 ## 六、已定案的關鍵決策（節錄）
 
@@ -79,7 +79,7 @@
 | 2 | **Tier 門檻與儲存/運算解耦**（RFC） | 影響定價與硬體採購規劃 | RFC 討論 |
 | 3 | **超過 tier 3 的大型需求**如何承接 | 是否為此擴 pool、或明確拒收 | 首個大戶出現前 |
 | 4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 #1 一併 |
-| 5 | **Row/column filter**（細粒度權限）做不做在平台側 | 使用者已提需求；做則增加範圍 | RFC 討論 |
+| 5 | **Row/column filter**（細粒度權限）做不做在平台側 | 需求已具體化：self-managed 使用者要求對**指定 table** 做 row filtering / column masking——若承接，是「self-managed 權限自理」原則的唯一例外，且使用者改表後的政策漂移責任要先定 | RFC 討論 |
 | 6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
 | 7 | **Managed 的 DDL/schema 治理模式** | 方案 A（owner approve、平台不審）：審核成本低、品質責任在使用者；方案 B（平台審核、raw 嚴審）：品質可控、平台審核成本高。影響平台人力配置與責任範圍 | **PM/管理層決定**，兩案已並列於 PRD 與規格 |
 | 8 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |

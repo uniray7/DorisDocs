@@ -125,6 +125,19 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 
 - 兩協定的權限/安全控管落在 access-control spec；QPS 計量路徑是否涵蓋 Arrow Flight（gateway 為 MySQL protocol proxy）待 RFC-002 驗證。
 
+### Self-managed 使用者需求與責任釐清（2026-07-14 補充）
+使用者對 self-managed 的四項需求，與平台責任的對應：
+1. **自己灌資料** → 已定（self-managed 唯一寫入方式，無新增責任）。
+2. **任意開 database/table** → 已定（DDL 自由，無新增責任）。
+3. **HA**：平台提的方案＝**兩座 Doris cluster（active-standby）**，平台以 **CCR 盡量維持同步**（best-effort），**failover 時平台介入幫忙** → **平台責任新增**：CCR 鏈路維運屬常態 infra 責任、failover 協助屬平台介入事項。
+4. **指定 table 的權限控制**：使用者指定特定 table，希望平台做 **row filtering 與 column masking** → 與 open issue #3 合流（需求具體化），**未決**。
+
+衍生待決（隨需求浮出）：
+- HA 是預設還是選配？standby cluster 的資源怎麼計（等同兩倍硬體）？
+- 「盡量維持同步」的 RPO 措辭（best-effort、不承諾零丟失）；failover 的觸發條件、判定者、RTO。
+- 使用者 DDL 自由下，CCR 對新建 database/table 的同步涵蓋（cluster 層級 vs db 層級同步）需實作驗證。
+- Row/column 控制若由平台承接，與「cluster 內帳號/權限使用者自理」的責任矩陣衝突；使用者改表/刪表造成的**政策漂移**責任歸屬。
+
 ### 對外文件結構要求（2026-07-13）
 對外文件需按服務模式分別闡明，深度不同：
 - **Managed**：使用規範（rules of use）、使用限制（limits）、責任歸屬（responsibility split）三者皆須明文。
@@ -152,7 +165,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 ### 待決事項（Open Issues，候選 RFC 題目）
 1. Tier 門檻：data volume 與 QPS 綁在同一 tier 不合理，考慮拆成儲存/運算兩條獨立軸，取較高者定 tier。
 2. ~~自寫入使用者的資料管理與責任歸屬~~ → **已由服務模式（self-managed / managed）解決**（2026-07-13），細節待 Phase 3 展開。
-3. Row filter / column filter（使用者已提出需求）：做在平台側還是使用者自理，未決。
+3. Row filter / column filter：**需求已具體化（2026-07-14）**——self-managed 使用者要求平台對其**指定的 table** 做 row filtering 與 column masking；做在平台側與否、與 self-managed 責任邊界的衝突（政策漂移）未決，候選 RFC。
 4. 超過 tier 3（>30TB 或 >500 QPS）的使用者如何處理。
 5. 敏感資料/PII 的平台責任範圍尚未明確定義。
 6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；~~(d) self-managed 代操作的計費方式~~ → 2026-07-14 決議：目前無任何付費機制、代操作不收費；成本歸屬併入計費模式決策（open issue：計費模式，Phase 5）。
@@ -187,6 +200,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-14 | Self-managed 支援邊界 | 平台常態只負責日常 infra 告警；使用問題/新版本/新功能/建表諮詢/查詢效能優化一律提 request 給 PM，由 PM 排優先權決定是否承接（非平台義務） | uniray7 |
 | 2026-07-14 | 無付費機制 | 平台目前沒有任何付費機制，「付費」措辭全數撤除（代操作、諮詢皆不收費）；未來是否引入計費併入計費模式決策（待拍板 #1） | uniray7 |
 | 2026-07-14 | 查詢協定 | 提供 MySQL protocol（完整 SQL）與 Arrow Flight protocol（僅 SELECT 類 SQL，不支援 metadata SQL 如 SHOW DATABASES）兩種查詢介面 | uniray7 |
+| 2026-07-14 | Self-managed HA 方案 | 兩座 Doris cluster（active-standby）+ CCR 盡量維持同步（best-effort）+ failover 時平台介入協助；預設/選配、standby 資源計算、RPO/RTO 待決 | uniray7 |
+| 2026-07-14 | Row/column filter 需求具體化 | Self-managed 使用者要求平台對其指定 table 提供 row filtering 與 column masking；承接與否未決（open issue #3，候選 RFC） | uniray7 |
 
 ## 試點回饋（Phase 9）
 

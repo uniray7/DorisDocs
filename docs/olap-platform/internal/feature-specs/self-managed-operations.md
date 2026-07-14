@@ -5,9 +5,11 @@
 
 ## 定位
 
-Self-managed 模式的平台支援**刻意限縮**為三件事：**日常 infra 相關告警**、**保護性 config**、**代操作（scale in/out）**。除此之外資料管理責任全在使用者——這條責任邊界是 self-managed 對外文件的核心內容（對外文件深度要求：self-managed 重點講責任歸屬）。
+Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 相關告警**、**保護性 config**、**代操作（scale in/out）**、**HA（雙 cluster CCR 維運 + failover 介入協助，2026-07-14 釐清）**。除此之外資料管理責任全在使用者——這條責任邊界是 self-managed 對外文件的核心內容（對外文件深度要求：self-managed 重點講責任歸屬）。
 
-三件事以外的任何支援需求（使用問題、新版本、新功能、建表諮詢、查詢效能優化）**不是平台義務**，一律走「**提 request 給 PM**」管道（見下方第 4 節）——由 PM 排優先權決定要不要做，平台不做即時支援承諾。
+四件事以外的任何支援需求（使用問題、新版本、新功能、建表諮詢、查詢效能優化）**不是平台義務**，一律走「**提 request 給 PM**」管道（見下方第 5 節）——由 PM 排優先權決定要不要做，平台不做即時支援承諾。
+
+使用者另提出「**指定 table 的 row filtering / column masking**」需求——是否由平台承接**未決**（open issue #3，候選 RFC；與「cluster 內權限使用者自理」的邊界衝突見責任歸屬矩陣註記）。
 
 ## 平台提供的內容
 
@@ -35,7 +37,17 @@ Self-managed 模式的平台支援**刻意限縮**為三件事：**日常 infra 
 - 執行流程：申請（目標 BE 數/規格）→ 管理層成本核准 → 排程執行（硬體不足進 WAITING_FOR_CAPACITY）→ 完成通知。
 - Scale in 前使用者須自行確認資料可容納於縮容後空間；平台執行前做水位檢查，不足即拒絕。
 
-### 4. 其他需求：PM Request 管道（2026-07-14 決議）
+### 4. HA：Active-Standby 雙 Cluster（2026-07-14 需求釐清）
+
+使用者需求「希望平台提供 HA」，平台方案：
+
+- **架構**：兩座 Doris cluster（active-standby）；平台以 **CCR（cross-cluster replication）盡量維持兩座同步**——**best-effort**，不承諾零資料丟失（RPO 量化與對外措辭 Phase 5）。
+- **平台責任**：standby cluster 佈建、CCR 鏈路建立與維運、**sync lag 監控納入日常 infra 告警範圍**、**failover 時介入幫忙**（切換操作由平台執行）。
+- **使用者責任**：failover 後的資料完整性驗證與應用側重連（gateway 統一端點是否延伸到 self-managed 以免換線 ⚠️ 待確認）。
+- ⚠️ **DDL 自由 × CCR 的交互**：使用者可任意開 database/table，CCR 的同步涵蓋（cluster 層級同步 vs 逐 db 設定、新建物件是否自動納入）需以 Doris 4.1.0 實測驗證；若逐 db 設定，新 database 的 CCR 掛載需成為平台例行操作。
+- 待決：HA 是**預設**（所有 self-managed 皆雙 cluster）還是**選配**；standby 資源怎麼計（等同兩倍硬體，影響 tier 佈建與容量規劃）；failover 觸發條件與判定者、RTO 目標。
+
+### 5. 其他需求：PM Request 管道（2026-07-14 決議）
 
 三件事以外的需求**一律提 request 給 PM，由 PM 排優先權決定要不要做**，適用範圍包含（但不限於）：
 
@@ -57,6 +69,8 @@ Self-managed 模式的平台支援**刻意限縮**為三件事：**日常 infra 
 | 系統層監控與告警 | ✅ | |
 | 保護性 config 維護 | ✅ | |
 | Scale in/out 執行 | ✅（代操作） | 提出申請 |
+| HA：standby 佈建、CCR 同步維運、failover 介入 | ✅（sync lag 屬 infra 告警） | failover 後資料完整性驗證、應用重連 |
+| 指定 table 的 row filtering / column masking | ⚠️ 未決（open issue #3）——若承接，將是「cluster 內權限使用者自理」的唯一例外，且需解決使用者改表/刪表後的政策漂移責任 | 指定 table 與政策內容 |
 | 使用問題/新版本/新功能/建表諮詢/效能優化 | 依 PM request 排優先權，**非義務** | 提 request 給 PM |
 | Doris 版本升級 | 提 request → PM 排優先權決定；核准後平台執行 | 提出需求 |
 | 資料寫入/pipeline | | ✅ |
@@ -76,6 +90,9 @@ Self-managed 模式的平台支援**刻意限縮**為三件事：**日常 infra 
 | 4 | 磁碟水位超過告警門檻 | 告警送使用者；持續逼近寫入保護門檻時平台可主動限制寫入（保護 cluster）並通知 |
 | 5 | 使用者申請 scale out、硬體不足 | WAITING_FOR_CAPACITY + 預估時間（與 workspace 申請同機制） |
 | 6 | 使用者把 cluster 打掛（誤設定/超載） | 平台恢復「系統可用」狀態（進程/節點層）；資料修復與根因排除由使用者自理，如需平台協助提 request 給 PM（不保證承接） |
+| 7 | CCR sync lag 超門檻 | infra 告警送 ws 聯絡人 + 平台排查鏈路（平台責任）；上游寫入量超出 CCR 承載時通知使用者調整 |
+| 8 | Active cluster 故障 | 平台介入執行 failover 至 standby（觸發條件/判定者待決）；failover 後資料完整性由使用者驗證，落差處理依 RPO 免責措辭（Phase 5） |
+| 9 | 使用者新建 database/table 後 CCR 未涵蓋 | 依實測決定：cluster 層級同步則自動涵蓋；逐 db 同步則新 database 的 CCR 掛載為平台例行操作（延遲期間的同步落差需告知） |
 
 ## 與其他功能的依賴關係
 - 開通交付內容與 WAITING_FOR_CAPACITY 狀態依 **workspace-application**。
@@ -87,6 +104,10 @@ Self-managed 模式的平台支援**刻意限縮**為三件事：**日常 infra 
 1. Scale 申請是否一律走週三會議，或另設輕量流程；緊急擴容綠色通道定義。
 2. 保護性 config 具體清單（實作時隨 Doris 4.1.0 參數定案）。
 3. PM request 的提交形式（工單/表單/會議）與 backlog 可視化方式。
+4. HA 是預設還是選配；standby 資源計算方式（兩倍硬體對 tier 佈建與容量規劃的影響）。
+5. Failover 觸發條件、判定者（平台單方 vs 與使用者確認）、RTO 目標；RPO 的 best-effort 對外措辭（Phase 5）。
+6. CCR 同步層級（cluster vs db）與新建物件涵蓋行為（Doris 4.1.0 實測）；gateway 統一端點是否延伸到 self-managed（failover 不換線）。
+7. 指定 table 的 row filtering / column masking 承接與否（open issue #3，候選 RFC）。
 
 ### 已銷案（2026-07-14 脈絡傾倒）
 - ~~Doris 版本升級責任~~ → 使用者提 request 給 PM 排優先權，核准後平台執行。

@@ -97,7 +97,7 @@
 ## 8. 非功能需求（Phase 5 補上）
 > 要填：可用性、查詢延遲 P95/P99、寫入吞吐、擴容機制、計費模式、備援/DR。
 > 注意：硬體 pool 浮動（視採購狀況），容量以「單位租戶資源模型」描述，不綁定總量。
-> 已知方向（自草稿）：HA 採 active-standby 架構，以 CCR 同步 + failover 機制避免資料遺失（適用範圍與 RPO/RTO 待 Phase 5 量化）。
+> 已知方向（自草稿；2026-07-14 對 self-managed 釐清）：HA 採 active-standby 雙 cluster 架構，以 CCR **盡量維持同步（best-effort，不承諾零丟失）** + failover 時平台介入協助。RPO/RTO、預設 vs 選配、standby 資源計算待 Phase 5 量化。
 > 使用規範鬆緊：shared cluster 規範較緊（保護鄰居租戶）；dedicated 較寬鬆（僅防 cluster 整體不穩／no response）。
 
 ## 9. 治理與合規（Phase 6 補上）
@@ -111,7 +111,7 @@
 |---|------|------|------|
 | 1 | Tier 門檻：儲存/運算解耦 | 待討論 | 候選 RFC |
 | 2 | ~~自寫入的資料管理與責任歸屬~~ | 已解決 | 由服務模式劃分（Decision Log 2026-07-13） |
-| 3 | Row/column filter 做在平台側與否 | 待討論 | 候選 RFC |
+| 3 | Row/column filter 做在平台側與否——需求已具體化（2026-07-14）：self-managed 使用者要求對指定 table 做 row filtering / column masking；含政策漂移責任、managed 是否一併提供 | 待討論 | 候選 RFC |
 | 4 | 超過 tier 3 規模的處理方式 | 待討論 | |
 | 5 | 敏感資料/PII 的平台責任範圍 | 待討論 | |
 | 6 | ~~Self-managed 代操作計費方式~~ → 2026-07-14 決議：目前無任何付費機制、代操作不收費 | 已決議 | 未來計費與否併入計費模式決策（open issue #1 類別，Phase 5） |

@@ -54,7 +54,9 @@
 | 平台責任 | 僅系統異常告警；scale in/out 可代操作（反映成本） | 平台負資料管理責任 |
 | 資料管理責任 | 使用者自負 | 平台承擔 |
 
-- Self-managed 給高自由度使用者；平台責任限縮為異常告警 + 付費代操作。
+- Self-managed 給高自由度使用者；平台責任限縮為日常 infra 告警 + 代操作（scale in/out）。
+- **Self-managed 支援邊界（2026-07-14 補充）**：平台常態只負責日常 infra 相關告警。使用上的問題、新版本、新功能、建表諮詢（consultant）、query performance 優化——一律**提 request 給 PM，由 PM 排優先權決定要不要做**（非平台義務，不做即時支援承諾）。
+- **無付費機制（2026-07-14 補充）**：平台目前**沒有任何付費機制**，代操作與 PM request 承接皆不收費；文件中「付費」措辭全數撤除，若未來引入計費（待拍板 #1）再議。
 - Managed 有規範約束（DDL approve 流程），換取平台承擔資料管理責任。
 
 ### 申請流程（2026-07-13 補充）
@@ -117,7 +119,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 ### 對外文件結構要求（2026-07-13）
 對外文件需按服務模式分別闡明，深度不同：
 - **Managed**：使用規範（rules of use）、使用限制（limits）、責任歸屬（responsibility split）三者皆須明文。
-- **Self-managed**：重點闡明**責任歸屬**（平台只負責異常告警與付費代操作，資料管理責任全在使用者）；使用規範/限制相對薄（僅防護 cluster 穩定的保護性 config 與告警門檻）。
+- **Self-managed**：重點闡明**責任歸屬**（平台只負責日常 infra 告警與代操作，資料管理責任全在使用者；其他需求走 PM request、非義務）；使用規範/限制相對薄（僅防護 cluster 穩定的保護性 config 與告警門檻）。
 - Phase 8 產出對外文件時，`limits-and-quotas.md` 與 `service-spec.md` 應以「模式 × 規範/限制/責任」矩陣呈現，避免使用者搞錯自己適用哪套。
 
 ### HA 架構（2026-07-13，自草稿整理）
@@ -144,7 +146,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 3. Row filter / column filter（使用者已提出需求）：做在平台側還是使用者自理，未決。
 4. 超過 tier 3（>30TB 或 >500 QPS）的使用者如何處理。
 5. 敏感資料/PII 的平台責任範圍尚未明確定義。
-6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；**(d) self-managed 代操作的計費方式仍未決**（Phase 5 處理）。
+6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；~~(d) self-managed 代操作的計費方式~~ → 2026-07-14 決議：目前無任何付費機制、代操作不收費；成本歸屬併入計費模式決策（open issue：計費模式，Phase 5）。
 7. **Managed 的 DDL 治理模式**：方案 A（ws owner approve + 平台選配建議）vs 方案 B（平台審核，raw 嚴審/curated 免審）——**待 PM/管理層決定**；申請時投影片 schema 是否平台審核同屬此決策。
 8. Shared cluster 資源隔離機制 → **RFC-002 草稿已完成**（建議：多層防線＝workload group 硬限制 + 自建 gateway + kill policy + 寫入側治理），待會簽核准。
 
@@ -173,6 +175,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | 申請流程純人工 | Workspace 申請（含 staging 租借/報告審核）無自動化 API：投影片 template + 每週三申請會議 + 人工追蹤表；API 留作未來 roadmap | uniray7 |
 | 2026-07-13 | 審查分軌 | Self-managed：管理層成本核准即通過，平台開 cluster+monitor/alert/log；Managed：審查定 shared/dedicated，須申報 ws 整體預期 data size | uniray7 |
 | 2026-07-13 | DDL 治理兩案並列 | Managed 的 database/table 治理**未定案**，兩案並列待 PM/管理層決定——方案 A：ws owner approve、平台不審、選配建議；方案 B：平台審核（raw 嚴審/curated 免審）、schema 把關屬平台責任。Self-managed 不經平台、平台不負責任（此點已定） | uniray7 |
+| 2026-07-14 | Self-managed 支援邊界 | 平台常態只負責日常 infra 告警；使用問題/新版本/新功能/建表諮詢/查詢效能優化一律提 request 給 PM，由 PM 排優先權決定是否承接（非平台義務） | uniray7 |
+| 2026-07-14 | 無付費機制 | 平台目前沒有任何付費機制，「付費」措辭全數撤除（代操作、諮詢皆不收費）；未來是否引入計費併入計費模式決策（待拍板 #1） | uniray7 |
 
 ## 試點回饋（Phase 9）
 

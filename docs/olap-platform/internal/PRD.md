@@ -25,6 +25,7 @@
 | Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | |
 | Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
 | Max QPS | Workspace 的查詢速率上限，以**滑動窗口平均（5 分鐘）**計量判定超標。 | 瞬間爆量由 resource group 併發限制兜底，不直接判超標 |
+| 查詢協定 | 平台提供兩種查詢介面：**MySQL protocol**（完整 SQL，含 metadata SQL）與 **Arrow Flight protocol**（僅 SELECT 相關 SQL，不支援 metadata SQL 如 `SHOW DATABASES`）。 | 共用同一權限體系；細節見 access-control spec |
 | Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校；schema 品質把關與否依 DDL 治理方案 A/B，待決）的服務模式。寫入一律走平台 pipeline；DDL 需經治理流程核准後由平台系統執行（核准者依方案 A/B：ws owner 或平台）。 | 申請時選定，**不可事後轉換** |
 | Self-managed 模式 | 使用者自行管理資料的服務模式：可自行灌資料與執行 DDL。平台責任限縮為日常 infra 告警與代操作（scale in/out，目前無付費機制）；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）提 request 由 PM 排優先權，非平台義務。**限定 dedicated cluster（tier 2+）**。 | 平台不負資料管理責任；不可用平台 pipeline |
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
@@ -71,7 +72,7 @@
 7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——ws 成員提交 DDL 申請 → 依治理方案核准（**方案 A**：ws owner approve；**方案 B**：平台審核，raw 嚴審/curated 免審——**待 PM/管理層決定**）→ 平台系統自動執行（zone 命名由系統保證）。與 workspace 申請是兩條獨立流程。
 8. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
 9. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
-10. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異：managed 無直接 load/DDL 權限）；row/column filter 是否納入依 RFC 決議。
+10. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異：managed 無直接 load/DDL 權限）；查詢協定（MySQL protocol 完整 SQL + Arrow Flight 僅 SELECT）；row/column filter 是否納入依 RFC 決議。
 
 ## 7. 多租戶與資源隔離模型
 > 要填：workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Tier 草案（門檻待 RFC 修正）：

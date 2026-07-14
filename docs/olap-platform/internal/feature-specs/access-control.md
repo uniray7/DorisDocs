@@ -18,6 +18,20 @@
 - 平台層操作全部留稽核紀錄（誰、何時、做了什麼）。
 - 資料層帳號由平台簽發與回收，使用者不能自建 Doris 帳號（managed；self-managed 拿到管理帳號後自理）。
 
+## 查詢協定（2026-07-14 決議）
+
+平台提供兩種查詢介面，**共用同一套 Doris 帳號與權限體系**（GRANT 在帳號層，權限矩陣不因協定而異）：
+
+| 協定 | 定位 | 支援範圍 |
+|------|------|---------|
+| **MySQL protocol** | 互動式查詢、BI 工具連線、metadata 操作 | 完整 SQL（受權限矩陣約束），含 metadata SQL |
+| **Arrow Flight protocol** | 高吞吐欄式資料讀取（應用程式/資料處理框架大量拉數據） | **僅 SELECT 相關 SQL**；metadata SQL（如 `SHOW DATABASES`）**不支援** |
+
+- 使用建議（寫入對外使用指南）：探索 schema、管理操作用 MySQL protocol；大量讀取用 Arrow Flight——**兩者互補而非二選一**，client 需同時取得兩種連線資訊。
+- Curated 的 ELT 寫入（insert...select）僅能走 MySQL protocol（Arrow Flight 不支援非 SELECT）。
+- Service account 的典型使用即 Arrow Flight 大量讀取；但兩協定對所有角色皆開放 ⚠️（是否限縮某協定給特定角色，待確認）。
+- ⚠️ 連線路徑待對齊 RFC-002：gateway（統一端點、QPS 計量）以 MySQL protocol 為前提；Arrow Flight 走 gRPC 且資料面直連 BE，**gateway 是否能代理、QPS 如何計量**列入 RFC-002 待驗證項。
+
 ## 角色模型（Managed）
 
 | 角色 | 平台層權限 | 資料層權限 |
@@ -63,6 +77,9 @@
 | 4 | Owner 移除成員 | 該成員資料層帳號立即失效、進行中申請轉派 ⚠️ |
 | 5 | 最後一位 Owner 欲退出 | 擋下：須先指派新 Owner |
 | 6 | 憑證外洩通報 | 平台立即輪換該憑證；稽核追查使用紀錄 |
+| 7 | Arrow Flight 連線執行 metadata SQL（如 `SHOW DATABASES`） | 不支援錯誤（協定限制）；使用者需改走 MySQL protocol |
+| 8 | Arrow Flight 連線執行非 SELECT 語句（含 curated 寫入） | 拒絕；寫入類操作僅 MySQL protocol |
+| 9 | 同一帳號經兩協定連線 | 權限行為一致（同一 GRANT 體系）；metadata 隔離在兩協定下皆成立 |
 
 ## API 邏輯
 
@@ -77,7 +94,7 @@
 - ws 間隔離邊界與 GRANT 實作：**workspace-isolation**（本 spec 是其「帳號模型細節」的展開）。
 - DDL 核准權限：**database-table-application**（方案 A 的 owner approve 即本 spec 的 Owner 角色）。
 - Producer/上傳憑證：**streaming/batch-ingestion**。
-- 連線一律經 gateway：**RFC-002**（連線數控管、QPS 計量以帳號歸屬 ws）。
+- MySQL protocol 連線一律經 gateway：**RFC-002**（連線數控管、QPS 計量以帳號歸屬 ws）；Arrow Flight 的路徑與計量待 RFC-002 驗證。
 - Row/column filter：RFC 決議（待拍板 #5）。
 
 ## 待確認事項
@@ -85,6 +102,8 @@
 2. Service account 的權限粒度（全 ws SELECT vs 指定 database）。
 3. Doris 帳號的併發/超時等 per-user 屬性是否由平台統一設定（關聯 RFC-002 per-ws 參數）。
 4. 憑證輪換週期政策（Phase 5/6）。
+5. 兩協定是否對所有角色開放，或限縮（如 service account 僅 Arrow Flight）。
+6. Arrow Flight 的連線端點設計與 QPS 計量（gateway 是否可代理 gRPC/Arrow Flight；與 RFC-002 待驗證項連動）。
 
 ## 邊界審查（Phase 4 補上）
 | Edge Case | 是否適用 | 處理方式 |

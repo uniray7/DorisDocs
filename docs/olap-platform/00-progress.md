@@ -116,6 +116,15 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 - **Zone 模型（含 raw 建表審核）僅適用 managed**；self-managed 不分 zone、不審表。
 - Managed 的 DDL 治理：方案 A（owner approve）/方案 B（平台審核，raw 嚴審/curated 免審）兩案並列待決；無論何案，建表計入儲存配額、tmp zone 由平台管理、平台系統代執行。
 
+### 查詢介面與 Security Control（2026-07-14 補充）
+平台提供**兩種查詢協定**：
+| 協定 | 支援範圍 |
+|------|---------|
+| MySQL protocol | 完整 SQL（受權限體系約束），含 metadata SQL |
+| Arrow Flight protocol | **僅 SELECT 相關 SQL**；metadata SQL（如 `SHOW DATABASES`）**不支援** |
+
+- 兩協定的權限/安全控管落在 access-control spec；QPS 計量路徑是否涵蓋 Arrow Flight（gateway 為 MySQL protocol proxy）待 RFC-002 驗證。
+
 ### 對外文件結構要求（2026-07-13）
 對外文件需按服務模式分別闡明，深度不同：
 - **Managed**：使用規範（rules of use）、使用限制（limits）、責任歸屬（responsibility split）三者皆須明文。
@@ -177,6 +186,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-13 | DDL 治理兩案並列 | Managed 的 database/table 治理**未定案**，兩案並列待 PM/管理層決定——方案 A：ws owner approve、平台不審、選配建議；方案 B：平台審核（raw 嚴審/curated 免審）、schema 把關屬平台責任。Self-managed 不經平台、平台不負責任（此點已定） | uniray7 |
 | 2026-07-14 | Self-managed 支援邊界 | 平台常態只負責日常 infra 告警；使用問題/新版本/新功能/建表諮詢/查詢效能優化一律提 request 給 PM，由 PM 排優先權決定是否承接（非平台義務） | uniray7 |
 | 2026-07-14 | 無付費機制 | 平台目前沒有任何付費機制，「付費」措辭全數撤除（代操作、諮詢皆不收費）；未來是否引入計費併入計費模式決策（待拍板 #1） | uniray7 |
+| 2026-07-14 | 查詢協定 | 提供 MySQL protocol（完整 SQL）與 Arrow Flight protocol（僅 SELECT 類 SQL，不支援 metadata SQL 如 SHOW DATABASES）兩種查詢介面 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

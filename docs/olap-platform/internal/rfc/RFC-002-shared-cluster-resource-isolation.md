@@ -79,6 +79,7 @@ Tier 1 預設不用。保留兩個適用場景：
 - [ ] Workload group 數量上限（單 cluster 可承載的 ws 數）
 - [ ] Spill to disk 對 shared SSD 的 IO 反噬程度
 - [ ] Gateway 的 QPS 計量與 Doris 端 workload group 指標的一致性
+- [ ] **Arrow Flight protocol 的涵蓋**（2026-07-14 新增）：平台提供 MySQL + Arrow Flight 雙協定，gateway 以 MySQL protocol proxy 為前提；Arrow Flight 走 gRPC 且資料面直連 BE——gateway 能否代理？不能的話 Arrow Flight 查詢的 QPS 計量與限流走哪條路（Doris audit log 事後計量？workload group 端承擔？）
 
 ## 決策紀錄
 | 日期 | 決議 | 決策者 |

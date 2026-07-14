@@ -135,7 +135,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 衍生待決（隨需求浮出）：
 - HA 是預設還是選配？standby cluster 的資源怎麼計（等同兩倍硬體）？
 - 「盡量維持同步」的 RPO 措辭（best-effort、不承諾零丟失）；failover 的觸發條件、判定者、RTO。
-- 使用者 DDL 自由下，CCR 對新建 database/table 的同步涵蓋（cluster 層級 vs db 層級同步）需實作驗證。
+- ~~CCR 對新建 database/table 的同步涵蓋~~ → 2026-07-14 確認：**CCR 為 cluster 層級全同步**，新建物件自動納入。
 - Row/column 控制若由平台承接，與「cluster 內帳號/權限使用者自理」的責任矩陣衝突；使用者改表/刪表造成的**政策漂移**責任歸屬。
 
 ### 對外文件結構要求（2026-07-13）
@@ -202,6 +202,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-14 | 查詢協定 | 提供 MySQL protocol（完整 SQL）與 Arrow Flight protocol（僅 SELECT 類 SQL，不支援 metadata SQL 如 SHOW DATABASES）兩種查詢介面 | uniray7 |
 | 2026-07-14 | Self-managed HA 方案 | 兩座 Doris cluster（active-standby）+ CCR 盡量維持同步（best-effort）+ failover 時平台介入協助；預設/選配、standby 資源計算、RPO/RTO 待決 | uniray7 |
 | 2026-07-14 | Row/column filter 需求具體化 | Self-managed 使用者要求平台對其指定 table 提供 row filtering 與 column masking；承接與否未決（open issue #3，候選 RFC） | uniray7 |
+| 2026-07-14 | CCR 同步層級 | CCR 為 cluster 層級全同步：使用者新建的 database/table 自動納入，平台無需逐 db 掛載 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

@@ -44,7 +44,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 - **架構**：兩座 Doris cluster（active-standby）；平台以 **CCR（cross-cluster replication）盡量維持兩座同步**——**best-effort**，不承諾零資料丟失（RPO 量化與對外措辭 Phase 5）。
 - **平台責任**：standby cluster 佈建、CCR 鏈路建立與維運、**sync lag 監控納入日常 infra 告警範圍**、**failover 時介入幫忙**（切換操作由平台執行）。
 - **使用者責任**：failover 後的資料完整性驗證與應用側重連（gateway 統一端點是否延伸到 self-managed 以免換線 ⚠️ 待確認）。
-- ⚠️ **DDL 自由 × CCR 的交互**：使用者可任意開 database/table，CCR 的同步涵蓋（cluster 層級同步 vs 逐 db 設定、新建物件是否自動納入）需以 Doris 4.1.0 實測驗證；若逐 db 設定，新 database 的 CCR 掛載需成為平台例行操作。
+- **CCR 為 cluster 層級全同步**（2026-07-14 確認）：使用者任意新建的 database/table **自動納入同步**，平台無需逐 db 掛載例行操作。
 - 待決：HA 是**預設**（所有 self-managed 皆雙 cluster）還是**選配**；standby 資源怎麼計（等同兩倍硬體，影響 tier 佈建與容量規劃）；failover 觸發條件與判定者、RTO 目標。
 
 ### 5. 其他需求：PM Request 管道（2026-07-14 決議）
@@ -92,7 +92,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 | 6 | 使用者把 cluster 打掛（誤設定/超載） | 平台恢復「系統可用」狀態（進程/節點層）；資料修復與根因排除由使用者自理，如需平台協助提 request 給 PM（不保證承接） |
 | 7 | CCR sync lag 超門檻 | infra 告警送 ws 聯絡人 + 平台排查鏈路（平台責任）；上游寫入量超出 CCR 承載時通知使用者調整 |
 | 8 | Active cluster 故障 | 平台介入執行 failover 至 standby（觸發條件/判定者待決）；failover 後資料完整性由使用者驗證，落差處理依 RPO 免責措辭（Phase 5） |
-| 9 | 使用者新建 database/table 後 CCR 未涵蓋 | 依實測決定：cluster 層級同步則自動涵蓋；逐 db 同步則新 database 的 CCR 掛載為平台例行操作（延遲期間的同步落差需告知） |
+| 9 | 使用者新建 database/table | CCR cluster 層級同步自動涵蓋（2026-07-14 確認），無需人工操作；新物件初次同步期間的 lag 屬正常行為 |
 
 ## 與其他功能的依賴關係
 - 開通交付內容與 WAITING_FOR_CAPACITY 狀態依 **workspace-application**。
@@ -106,7 +106,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 3. PM request 的提交形式（工單/表單/會議）與 backlog 可視化方式。
 4. HA 是預設還是選配；standby 資源計算方式（兩倍硬體對 tier 佈建與容量規劃的影響）。
 5. Failover 觸發條件、判定者（平台單方 vs 與使用者確認）、RTO 目標；RPO 的 best-effort 對外措辭（Phase 5）。
-6. CCR 同步層級（cluster vs db）與新建物件涵蓋行為（Doris 4.1.0 實測）；gateway 統一端點是否延伸到 self-managed（failover 不換線）。
+6. Gateway 統一端點是否延伸到 self-managed（failover 不換線）。（~~CCR 同步層級~~ → 2026-07-14 確認：cluster 層級全同步，新建物件自動涵蓋）
 7. 指定 table 的 row filtering / column masking 承接與否（open issue #3，候選 RFC）。
 
 ### 已銷案（2026-07-14 脈絡傾倒）

@@ -128,7 +128,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 ### Self-managed 使用者需求與責任釐清（2026-07-14 補充）
 使用者對 self-managed 的四項需求，與平台責任的對應：
 1. **自己灌資料** → 已定（self-managed 唯一寫入方式，無新增責任）。
-2. **任意開 database/table** → 已定（DDL 自由，無新增責任）。
+2. **任意開 database/table** → **2026-07-16 修訂**：「任意」保留（隨時、不需審核理由），但收回「直接打 Doris」——database/table DDL 一律走「提交 → 驗證（語法+危險操作+撞名）→ 平台代建（注入 replication 等保護性 property）」流程；治理形態三選項待 manager 決策（**RFC-003**）。
 3. **HA**：平台提的方案＝**兩座 Doris cluster（active-standby）**，平台以 **CCR 盡量維持同步**（best-effort），**failover 時平台介入幫忙** → **平台責任新增**：CCR 鏈路維運屬常態 infra 責任、failover 協助屬平台介入事項。
 4. **指定 table 的權限控制**：使用者指定特定 table，希望平台做 **row filtering 與 column masking** → 與 open issue #3 合流（需求具體化），**未決**。
 
@@ -171,6 +171,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 6. ~~服務模式衍生問題 (a)(b)(c)~~ → 已決議（見 Decision Log 2026-07-13）；~~(d) self-managed 代操作的計費方式~~ → 2026-07-14 決議：目前無任何付費機制、代操作不收費；成本歸屬併入計費模式決策（open issue：計費模式，Phase 5）。
 7. **Managed 的 DDL 治理模式**：方案 A（ws owner approve + 平台選配建議）vs 方案 B（平台審核，raw 嚴審/curated 免審）——**待 PM/管理層決定**；申請時投影片 schema 是否平台審核同屬此決策。
 8. Shared cluster 資源隔離機制 → **RFC-002 草稿已完成**（建議：多層防線＝workload group 硬限制 + 自建 gateway + kill policy + 寫入側治理），待會簽核准。
+9. Self-managed DDL 治理與資料管理 R&R → **RFC-003 草稿已完成**（2026-07-16）：DDL 代建 + 驗證深度已為前提；三選項（固定三庫/命名規則/表單宣告制）**待 manager 決策**，團隊建議 Option 3（表單宣告制）。
 
 ## Decision Log
 | 日期 | 事項 | 決議 | 決策者 |
@@ -203,6 +204,8 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-14 | Self-managed HA 方案 | 兩座 Doris cluster（active-standby）+ CCR 盡量維持同步（best-effort）+ failover 時平台介入協助；預設/選配、standby 資源計算、RPO/RTO 待決 | uniray7 |
 | 2026-07-14 | Row/column filter 需求具體化 | Self-managed 使用者要求平台對其指定 table 提供 row filtering 與 column masking；承接與否未決（open issue #3，候選 RFC） | uniray7 |
 | 2026-07-14 | CCR 同步層級 | CCR 為 cluster 層級全同步：使用者新建的 database/table 自動納入，平台無需逐 db 掛載 | uniray7 |
+| 2026-07-16 | Self-managed DDL 代建（前提） | Database 與 table 的 DDL 一律不直接打 Doris：提交 → 驗證（語法+危險操作+撞名，不驗 schema 設計）→ 平台代建並注入保護性 property（如 replication 設定）；初期人工、之後 API/GUI。適用 RFC-003 全部選項 | uniray7 |
+| 2026-07-16 | Self-managed 治理形態 | 三選項（固定三庫 / 命名規則 / 表單宣告制）連同 pros/cons 與 R&R 寫入 RFC-003，**交 manager 決策**；團隊建議 Option 3——理由：寫入路徑在使用者手上，zone 語義無法保證（宣告制才是實體，命名只是介面） | uniray7（待 manager） |
 
 ## 試點回饋（Phase 9）
 

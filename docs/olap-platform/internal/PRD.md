@@ -116,7 +116,7 @@
 | 5 | 敏感資料/PII 的平台責任範圍 | 待討論 | |
 | 6 | ~~Self-managed 代操作計費方式~~ → 2026-07-14 決議：目前無任何付費機制、代操作不收費 | 已決議 | 未來計費與否併入計費模式決策（open issue #1 類別，Phase 5） |
 | 7 | **Managed 的 DDL/schema 治理模式** | **待 PM/管理層決定** | 方案 A：ws owner approve、平台不審、選配建議（審核成本低，schema 品質責任在使用者）；方案 B：平台審核（raw 嚴審/curated 免審）、schema 把關屬平台四大責任（品質可控，審核成本高）。申請時投影片 schema 是否平台審核，同屬此決策 |
-| 8 | **Self-managed 的 DDL 治理形態與資料管理 R&R** | **待 manager 決策（RFC-003）** | 前提已定：**database DDL 代建；table DDL 直接執行**（dbt 相容，2026-07-16 修訂）。選項：1 固定三庫 / 2 強制 zone 命名 / 3 表單宣告制（團隊建議）；子決策：備份/還原暫定不提供（audit log 舉證）。R&R 三案幾乎相同，差異在語義承載方式 |
+| 8 | **Self-managed 的 DDL 治理形態與資料管理 R&R** | **待 manager 決策（RFC-003）** | 前提已定：**database DDL 代建；table DDL 雙軌**（代建=事前攔截+注入+告警、平台對建成當下負責；自建=零責任、dbt 相容；巡檢不分軌全涵蓋）。選項：1 固定三庫 / 2 強制 zone 命名 / 3 表單宣告制（團隊建議）；子決策：備份/還原暫定不提供（audit log 舉證）。R&R 三案幾乎相同，差異在語義承載方式 |
 
 ## 12. 衍生文件索引（Phase 8 完成後補上）
 - System Architecture：`system-architecture.md`

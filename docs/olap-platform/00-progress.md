@@ -209,6 +209,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-16 | Self-managed 備份/還原 | **暫定不提供**（RFC-003 子決策甲）：誤刪/誤操作一律不救援、對外明文免責；平台保存 DDL 申請紀錄 + Doris audit log（規劃集中至 ELK）證明操作出自使用者。乙案（宣告制備份）保留並列，但書：待有人力且使用者開需求再評估開發 | uniray7 |
 | 2026-07-16 | Table DDL 開放直接執行（修訂） | 因使用者以 dbt 處理資料（高頻 create/drop 暫時表），撤回「table 也代建」：**database DDL 代建、table DDL 直接打 Doris**。表級保護改 cluster/db 級預設值＋巡檢告警；table 舉證完全依賴 audit log；table 級宣告（TTL/敏感性）改選用登記 | uniray7 |
 | 2026-07-16 | Table DDL 雙軌制（再修訂，定案） | 自建之外增設「平台代建」為**可選建議路徑**：代建表獲事前攔截＋property 注入＋事後告警（drift 偵測），平台對建成當下設定負責、**ALTER 即責任轉移**；自建表平台零責任。**巡檢不分軌涵蓋全部表**（cluster 自保、不構成背書）。配套：dbt 與代建互斥、table id 識別、清冊對使用者可視、短命表排除 | uniray7 |
+| 2026-07-16 | Cluster 穩定性責任框架 | 四層防線：代建攔截（選用）／上限封頂（**強制全域**，不經手也生效）／巡檢偵測／恢復＋**緊急介入權**（危及 cluster 存活時可先處置後通知，條款進對外規範）。對外承諾措辭＝「弄不沉、劣化會叫、沉了會救、誰弄的有證據」，**不保證不變慢**。CCR lag 受寫入行為影響 → RPO best-effort 的依據 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

@@ -77,7 +77,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 | Doris 版本升級 | 提 request → PM 排優先權決定；核准後平台執行 | 提出需求 |
 | 資料寫入/pipeline | | ✅ |
 | Schema 設計與 DDL | | ✅（建表諮詢可提 PM request，不保證承接） |
-| 備份/還原 | | ✅（如需平台協助走 PM request） |
+| 備份/還原 | ❌ 不提供（RFC-003 子決策暫定甲：誤刪/誤操作一律不救援、明文免責；平台保存 DDL 申請紀錄 + Doris audit log〔規劃 ELK〕作舉證） | ✅ 自行負責 |
 | 查詢效能調校 | | ✅（優化協助可提 PM request，不保證承接） |
 | 帳號/權限管理（cluster 內） | | ✅ |
 | 配額與用量申報 | | ✅（超標處理見 cluster-tiering） |

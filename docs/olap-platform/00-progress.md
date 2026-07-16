@@ -206,6 +206,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-14 | CCR 同步層級 | CCR 為 cluster 層級全同步：使用者新建的 database/table 自動納入，平台無需逐 db 掛載 | uniray7 |
 | 2026-07-16 | Self-managed DDL 代建（前提） | Database 與 table 的 DDL 一律不直接打 Doris：提交 → 驗證（語法+危險操作+撞名，不驗 schema 設計）→ 平台代建並注入保護性 property（如 replication 設定）；初期人工、之後 API/GUI。適用 RFC-003 全部選項 | uniray7 |
 | 2026-07-16 | Self-managed 治理形態 | 三選項（固定三庫 / 命名規則 / 表單宣告制）連同 pros/cons 與 R&R 寫入 RFC-003，**交 manager 決策**；團隊建議 Option 3——理由：寫入路徑在使用者手上，zone 語義無法保證（宣告制才是實體，命名只是介面） | uniray7（待 manager） |
+| 2026-07-16 | Self-managed 備份/還原 | **暫定不提供**（RFC-003 子決策甲）：誤刪/誤操作一律不救援、對外明文免責；平台保存 DDL 申請紀錄 + Doris audit log（規劃集中至 ELK）證明操作出自使用者。乙案（宣告制備份）保留並列，但書：待有人力且使用者開需求再評估開發 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

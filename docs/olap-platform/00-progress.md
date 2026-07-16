@@ -128,7 +128,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 ### Self-managed 使用者需求與責任釐清（2026-07-14 補充）
 使用者對 self-managed 的四項需求，與平台責任的對應：
 1. **自己灌資料** → 已定（self-managed 唯一寫入方式，無新增責任）。
-2. **任意開 database/table** → **2026-07-16 修訂**：「任意」保留（隨時、不需審核理由），但收回「直接打 Doris」——database/table DDL 一律走「提交 → 驗證（語法+危險操作+撞名）→ 平台代建（注入 replication 等保護性 property）」流程；治理形態三選項待 manager 決策（**RFC-003**）。
+2. **任意開 database/table** → **2026-07-16 修訂（二次）**：**database DDL 走代建流程**（提交 → 驗證〔語法+危險操作+撞名〕→ 平台代建並設定保護性預設）；**table DDL 開放直接打 Doris**——使用者以 **dbt** 處理資料，dbt 高頻 create/drop 暫時性 table，table 代建不可行（原「table 也代建」撤回）。表級保護改「cluster/db 級預設值＋巡檢告警」。治理形態三選項待 manager 決策（**RFC-003**）。
 3. **HA**：平台提的方案＝**兩座 Doris cluster（active-standby）**，平台以 **CCR 盡量維持同步**（best-effort），**failover 時平台介入幫忙** → **平台責任新增**：CCR 鏈路維運屬常態 infra 責任、failover 協助屬平台介入事項。
 4. **指定 table 的權限控制**：使用者指定特定 table，希望平台做 **row filtering 與 column masking** → 與 open issue #3 合流（需求具體化），**未決**。
 
@@ -207,6 +207,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-16 | Self-managed DDL 代建（前提） | Database 與 table 的 DDL 一律不直接打 Doris：提交 → 驗證（語法+危險操作+撞名，不驗 schema 設計）→ 平台代建並注入保護性 property（如 replication 設定）；初期人工、之後 API/GUI。適用 RFC-003 全部選項 | uniray7 |
 | 2026-07-16 | Self-managed 治理形態 | 三選項（固定三庫 / 命名規則 / 表單宣告制）連同 pros/cons 與 R&R 寫入 RFC-003，**交 manager 決策**；團隊建議 Option 3——理由：寫入路徑在使用者手上，zone 語義無法保證（宣告制才是實體，命名只是介面） | uniray7（待 manager） |
 | 2026-07-16 | Self-managed 備份/還原 | **暫定不提供**（RFC-003 子決策甲）：誤刪/誤操作一律不救援、對外明文免責；平台保存 DDL 申請紀錄 + Doris audit log（規劃集中至 ELK）證明操作出自使用者。乙案（宣告制備份）保留並列，但書：待有人力且使用者開需求再評估開發 | uniray7 |
+| 2026-07-16 | Table DDL 開放直接執行（修訂） | 因使用者以 dbt 處理資料（高頻 create/drop 暫時表），撤回「table 也代建」：**database DDL 代建、table DDL 直接打 Doris**。表級保護改 cluster/db 級預設值＋巡檢告警；table 舉證完全依賴 audit log；table 級宣告（TTL/敏感性）改選用登記 | uniray7 |
 
 ## 試點回饋（Phase 9）
 

@@ -11,7 +11,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 
 使用者另提出「**指定 table 的 row filtering / column masking**」需求——是否由平台承接**未決**（open issue #3，候選 RFC；與「cluster 內權限使用者自理」的邊界衝突見責任歸屬矩陣註記）。
 
-> ⚠️ **2026-07-16 重大修訂進行中**：self-managed 的 DDL 治理與資料管理 R&R 已立 [RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 待 manager 決策。已定前提：**database/table DDL 一律走代建流程**（驗證 + 注入保護性 property），不再直接打 Doris。RFC-003 定案後，本 spec 的責任歸屬矩陣與「Schema 設計與 DDL」等條目將依決議改寫。
+> ⚠️ **2026-07-16 重大修訂進行中**：self-managed 的 DDL 治理與資料管理 R&R 已立 [RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 待 manager 決策。已定前提：**database DDL 走代建流程**（驗證 + 保護性預設）；**table DDL 開放直接打 Doris**（dbt 相容——dbt 高頻 create/drop 暫時表）。RFC-003 定案後，本 spec 的責任歸屬矩陣與「Schema 設計與 DDL」等條目將依決議改寫。
 
 ## 平台提供的內容
 

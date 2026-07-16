@@ -12,17 +12,21 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 
 1. **平台對看不懂的東西負不了責**。資料管理責任（備份、保留清除、健康巡檢）需要平台至少知道「有哪些物件、哪些重要」。DDL 完全自由下平台既無物件清冊、也無語義，責任無處掛載。
 2. **CCR 不是備份**。HA 方案是 cluster 級全同步——使用者誤 `DROP TABLE`、灌錯資料，standby 幾秒內同樣消失/污染。HA 擋機器故障，擋不住邏輯錯誤——這個 gap 需要被有意識地決定怎麼處理（見「子決策：備份/還原」，**暫定不提供、明文免責 + audit log 舉證**）。
-3. **保護性 config 需要下沉到 table 粒度**。replication 數等設定必須在建表當下注入，事後補救成本高——這要求平台經手每一次建表。
+3. **保護性 config 需要下沉到 table 粒度**——但注入點受限：使用者以 **dbt** 處理資料，dbt 高頻 create/drop 暫時性 table，平台經手每次建表不可行（見已定前提 #1 的修訂），表級保護改以「cluster/database 級預設值 + 巡檢偵測違規」實現。
 
 ## 已定前提（團隊已收斂，2026-07-16）
 
 以下適用**全部選項**，不在 manager 決策範圍內：
 
-1. **Database 與 table 的 DDL 一律不直接打 Doris**：走「提交 → 驗證 → 平台代建」流程（初期人工執行，之後推出 API/GUI 工具）。
-2. **驗證深度**：語法合法性 + 危險操作攔截 + 撞名檢查；平台在背後**注入保護性 property**（如 replication 相關設定）。**不驗 schema 設計**（分區/分桶/型別合理性不審）——schema 品質責任維持在使用者（既有決議不變）。
-3. 灌資料維持完全自由（寫入路徑在使用者手上，這是 self-managed 的定義性特徵）。
+1. **DDL 治理分兩級**（2026-07-16 修訂：原「table 也代建」因 dbt 相容性撤回）：
+   - **Database DDL 走代建流程**：不直接打 Doris——「提交 → 驗證 → 平台代建」（初期人工執行，之後推出 API/GUI 工具）。database 是低頻操作，摩擦可接受。
+   - **Table DDL 開放直接打 Doris**：使用者以 **dbt** 處理資料，dbt 的運作方式即高頻 create/drop 暫時性 table（staging model、`__dbt_tmp` 中繼表、create-then-swap），代建流程會直接讓 dbt 不可用。
+2. **驗證深度（database 代建流程）**：語法合法性 + 危險操作攔截 + 撞名檢查；平台在建 database 時**注入/設定保護性預設**。**不驗 schema 設計**——品質責任維持在使用者（既有決議不變）。
+3. **表級保護改為「預設值 + 巡檢」**：replication 等保護性設定以 cluster/database 級預設值生效（self-managed 為 dedicated cluster，cluster 級預設可行）；建表時的危險樣態（無分區大表等）無法事前攔截，改由**巡檢事後偵測 + 告警**。
+4. 灌資料維持完全自由（寫入路徑在使用者手上，這是 self-managed 的定義性特徵）。
 
-> ⚠️ 對產品定位的影響（manager 需知悉）：這組前提**修改了「任意開 database/table」的原承諾**——「任意」保留在「隨時、不需審核理由」，但收回「直接打 Doris」。Managed 與 self-managed 的差異重心從「DDL 自由」移到「**寫入路徑 + 資料管理責任**」。
+> ⚠️ 對產品定位的影響（manager 需知悉）：相對原承諾「任意開 database/table」，本前提只收回 **database 層的直接執行**；table 層維持完全自由（dbt 工作流不受影響）。Managed 與 self-managed 的差異重心維持在「**寫入路徑 + 資料管理責任**」。
+> ⚠️ dbt 相容性注意：dbt 慣以 schema（在 MySQL 協定下即 Doris database）組織 target/custom schema，且會嘗試自動 `CREATE SCHEMA`——使用規範需指引「database 先透過代建流程建好、關閉 dbt 的自動建 schema」，此行為列入待驗證。
 
 ## 待決問題
 
@@ -39,7 +43,7 @@ DDL 代建流程確定後，剩下的決策是**治理形態**：要不要把 ma
 
 ## 選項
 
-> 註：table DDL 代建為共同前提，三個選項的日常摩擦幾乎相同；差異集中在 database 的組織方式與語義承載。
+> 註：「database 代建、table 直接執行」為共同前提，三個選項的日常摩擦幾乎相同（table 層全都自由）；差異集中在 database 的組織方式與語義承載。
 
 ### Option 0（基線，已排除）：DDL 完全自由（直接打 Doris）
 維持原承諾。**排除理由**：無法注入保護性 property、無物件清冊、無宣告入口——資料管理責任完全無處掛載，平台只能做 cluster 級告警。列出僅供對照「我們為什麼要做這個決策」。
@@ -70,16 +74,17 @@ Database 數量自由，但名字必須帶 zone 段；database/table 皆走代�
 ### Option 3：自由開 database/table，無命名規則，代建流程 +「建立時宣告」（**團隊建議**）
 Database/table 自由規劃、不套 zone；代建流程的提交表單同時是**宣告入口**：
 
-- 建立 database/table 時宣告（皆可日後修改）：
+- **Database 建立時宣告**（代建流程內建，皆可日後修改）：
   - **TTL/retention**：要不要平台代清、保留多久——使用者指定保留期，平台檢查後執行清理，清理失敗或未生效時告警
   - **敏感性**：是否含敏感資料 → 銜接 open issue #3（row/column masking）與 PII 治理（open issue #5）
   - （備份宣告屬下方「子決策」的乙案，**暫不提供**）
-- 平台獲得完整**物件清冊**（每個物件的存在、宣告、注入的 property 都有紀錄），巡檢與告警有掛載點。
+- **Table 級宣告為選用登記**（table DDL 不經手平台，無法內建）：dbt 產生的暫時表無需理會；使用者只為重要的長存表登記 TTL/敏感性。未登記的表僅受 database 級宣告與巡檢涵蓋。
+- 平台的**物件清冊**兩個來源：database 由代建流程產生（完整）；table 由 metadata 週期掃描（近即時），巡檢與告警以此掛載。
 
 | Pros | Cons |
 |------|------|
 | 責任邊界最誠實：平台只承諾「執行宣告 + 掉了會叫」，不假裝懂語義 | 與 managed 的模型不一致（但本來就是兩種模式） |
-| 宣告內建在必經流程裡，涵蓋率天然高（不靠使用者記得來登記） | 提交表單比「只填名字」多幾個欄位 |
+| Database 級宣告內建在必經流程、涵蓋率天然高；table 級選用登記不干擾 dbt 工作流 | Table 級宣告涵蓋率取決於使用者自律（未登記的長存表僅受 db 級宣告與巡檢涵蓋） |
 | 宣告可事後修改（名字不行） | 平台要維護宣告與物件的對應（清冊系統） |
 | 為 row/column masking（open issue #3）鋪好同一套宣告機制 | |
 
@@ -87,15 +92,16 @@ Database/table 自由規劃、不套 zone；代建流程的提交表單同時是
 
 | 責任 | 平台 | 使用者 |
 |------|------|--------|
-| DDL 代建執行、語法/危險操作/撞名驗證 | ✅ | 提交申請 |
-| 注入的保護性 property（replication 等）正確性 | ✅ | 不可修改 |
+| Database DDL 代建執行、語法/危險操作/撞名驗證 | ✅ | 提交申請 |
+| Table DDL（含 dbt 高頻建/刪暫時表） | ❌ 不經手 | ✅ 直接打 Doris、自由執行 |
+| 保護性預設（cluster/database 級 replication 等）＋巡檢偵測違規表並告警 | ✅ | 收到告警後處置；自行覆寫表級 property 的後果自負 |
 | Schema 設計品質（分區/分桶/型別/效能） | ❌ 不審不揹 | ✅ |
-| 物件清冊維護 | ✅ | |
+| 物件清冊維護（database＝代建紀錄；table＝metadata 週期掃描） | ✅ | |
 | 儲存健康巡檢（占用/成長/tablet 健康/compaction/反模式偵測），**告警附建議、不強制處置** | ✅（infra 告警的延伸，預設提供） | 處置 |
 | 備份/還原 | ❌ **暫不提供**（子決策暫定甲案，見下節） | ✅ 自行負責 |
 | 誤刪/誤操作救援 | ❌ **一律不救援**（CCR 會同步誤操作、無備份即無還原）——**明文寫入對外文件** | ✅ 全責 |
-| 稽核舉證 | ✅ 保存 DDL 申請紀錄 + **Doris audit log**（規劃集中至 ELK），供「操作出自使用者」的責任釐清 | |
-| TTL 清理（使用者指定保留期，平台檢查後執行） | ✅ 執行清理；清理失敗/未生效時告警 | 保留期數字的正確性 |
+| 稽核舉證 | ✅ database DDL 有代建申請紀錄；**table DDL 與 DML 舉證依 Doris audit log**（規劃集中至 ELK），供「操作出自使用者」的責任釐清 | |
+| TTL 清理（使用者指定保留期，平台檢查後執行；table 級靠選用登記） | ✅ 執行清理；清理失敗/未生效時告警 | 保留期數字的正確性；重要長存表的登記 |
 | 資料流向/血緣、資料正確性 | ❌ | ✅（寫入路徑在使用者手上） |
 | Row filtering / column masking | 待 open issue #3 決議（若承接，走同一套宣告機制） | 政策內容、schema 變更後重新宣告 |
 
@@ -108,7 +114,7 @@ Database/table 自由規劃、不套 zone；代建流程的提交表單同時是
 | | **甲：不提供備份/還原（暫定採用）** | **乙：宣告制備份（保留為未來選項）** |
 |---|---|---|
 | 內容 | 平台不做任何備份；誤刪/誤操作/資料丟失**一律不救援**，使用者自行負責（含自建備份） | 使用者建立物件時宣告「要備份、頻率、保留份數」→ 平台按宣告執行 Doris BACKUP 至 MinIO，並監控備份 job 成功率（靜默失敗即告警） |
-| 配套 | **舉證機制**：DDL 全走代建流程（每次刪除天生有申請紀錄：誰提交、何時執行）+ 保存 Doris audit log（規劃集中至 ELK，涵蓋使用者自有寫入路徑的操作）——「這是使用者自己刪的」證據鏈完整；對外文件**明文免責** | 責任切分：平台對「忠實執行宣告」負責；宣告內容正確性、未宣告物件的丟失歸使用者 |
+| 配套 | **舉證機制**：database 刪除有代建申請紀錄（誰提交、何時執行）；**table 級操作（含 DROP TABLE）與 DML 的舉證完全依賴 Doris audit log**（規劃集中至 ELK）——證據鏈仍完整，但成立前提是 audit log 的保存不可中斷（保留期 Phase 5/6 定）；對外文件**明文免責** | 責任切分：平台對「忠實執行宣告」負責；宣告內容正確性、未宣告物件的丟失歸使用者 |
 | 成本 | 零開發、零維運 | 備份排程系統、還原流程、儲存空間、監控——需投入開發與常態維運 |
 | 風險 | 第一個誤刪重要資料的使用者無法救援（免責條款可擋責任，擋不了觀感） | 涵蓋率與宣告正確性的邊際糾紛；維運負擔 |
 
@@ -133,13 +139,15 @@ Database/table 自由規劃、不套 zone；代建流程的提交表單同時是
 - `feature-specs/self-managed-operations.md`：責任矩陣併入本 RFC 的 R&R；「任意開 database/table」需求的回應方式更新。
 - `PRD.md`：self-managed 術語定義（「可自行執行 DDL」→「DDL 走代建流程」）；§6.8。
 - `feature-specs/workspace-application.md`：「self-managed 命名自由」的表述（Option 3 下仍成立，但需補「DDL 走代建」）；佈建交付項增加 DDL 提交管道說明。
-- `feature-specs/access-control.md`：self-managed 帳號將**不再持有 DDL 權限**（僅平台系統帳號可 DDL）——這是本決策在權限模型上的直接後果。
+- `feature-specs/access-control.md`：self-managed 帳號**保留 table 級 DDL 權限、收回 database 級 DDL**（database 僅平台系統帳號可建/刪）——Doris 權限體系能否精確做到「禁 database DDL、允 table DDL」需驗證（見待驗證項）。
 - `00-progress.md`：使用者需求清單第 2 條的決議狀態。
 - 新增平台元件：DDL 提交/驗證/代建管道（初期人工 + 內部工具，之後 API/GUI）——納入 system-architecture（Phase 8）。
 
 ## 待驗證項（實作時）
-- [ ] 危險操作攔截清單（Doris 4.1.0：無分區大表、replication 違規、外部表等）
-- [ ] 注入 property 清單與預設值（replication 數等，隨 tier 規格定）
+- [ ] **Doris 權限粒度**：能否對使用者帳號「禁 database DDL、允 table DDL」（catalog 級 vs database 級 CREATE 權限的行為）
+- [ ] **Cluster/database 級保護性預設**：replication 等預設值在 Doris 4.1.0 的設定點與生效行為（FE config / db property）
+- [ ] **dbt on Doris 行為**：schema（=database）自動建立的處理方式（關閉 dbt 自動建 schema 的設定指引）、materialization 使用的暫時表樣態
+- [ ] 危險操作攔截清單（database 代建流程適用）；表級危險樣態（無分區大表等）的**巡檢偵測**規則
 - [ ] Doris audit log 集中保存管道（規劃 ELK）與保留期（Phase 5/6 定案）
 - [ ] （僅子決策乙案啟動時）Doris BACKUP/RESTORE 在 4.1.0 的物件粒度、與 CCR 的並存行為
 - [ ] 宣告清冊的存放與稽核（平台側系統）

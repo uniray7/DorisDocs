@@ -128,7 +128,7 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 ### Self-managed 使用者需求與責任釐清（2026-07-14 補充）
 使用者對 self-managed 的四項需求，與平台責任的對應：
 1. **自己灌資料** → 已定（self-managed 唯一寫入方式，無新增責任）。
-2. **任意開 database/table** → **2026-07-16 定案為雙軌制**：**database DDL 一律代建**（提交 → 驗證 → 平台代建）；**table DDL 雙軌**——(a) 平台代建（建議路徑）：事前攔截＋property 注入＋事後告警，平台對建成當下設定負責；(b) 自建（直接打 Doris，dbt 相容）：**平台零責任**（replication/retention 設錯不關平台）。**儲存健康巡檢不分軌涵蓋全部表**（cluster 自保，有問題的表不論出身都傷 cluster）。六項隱患與配套見 RFC-003；治理形態三選項待 manager 決策。
+2. **任意開 database/table** → **2026-07-17 改訂為全代建（先緊縮後放寬）**：database 與 table 的 DDL（含 ALTER/DROP）**一律「提交 → 驗證 → 平台代建」**，使用者帳號不授予 DDL 權限；事前攔截＋保護性 property 注入涵蓋全部表；巡檢與封頂防線不變。曾定案的雙軌制（07-16）與「全自建＋最佳實踐文件」形態降為**放寬預案**（RFC-003 §9），觸發條件＝使用者正式提出 dbt/高頻建表需求。隱患與配套見 RFC-003 §8（代建摩擦、dbt 需求可能很快出現、GRANT 權限收乾淨的帳號體系衝突）；治理形態三選項待 manager 決策。
 3. **HA**：平台提的方案＝**兩座 Doris cluster（active-standby）**，平台以 **CCR 盡量維持同步**（best-effort），**failover 時平台介入幫忙** → **平台責任新增**：CCR 鏈路維運屬常態 infra 責任、failover 協助屬平台介入事項。
 4. **指定 table 的權限控制**：使用者指定特定 table，希望平台做 **row filtering 與 column masking** → 與 open issue #3 合流（需求具體化），**未決**。
 
@@ -208,8 +208,10 @@ Cluster 內分三個 zone，對應 Databricks 的 Bronze/Silver/Gold：
 | 2026-07-16 | Self-managed 治理形態 | 三選項（固定三庫 / 命名規則 / 表單宣告制）連同 pros/cons 與 R&R 寫入 RFC-003，**交 manager 決策**；團隊建議 Option 3——理由：寫入路徑在使用者手上，zone 語義無法保證（宣告制才是實體，命名只是介面） | uniray7（待 manager） |
 | 2026-07-16 | Self-managed 備份/還原 | **暫定不提供**（RFC-003 子決策甲）：誤刪/誤操作一律不救援、對外明文免責；平台保存 DDL 申請紀錄 + Doris audit log（規劃集中至 ELK）證明操作出自使用者。乙案（宣告制備份）保留並列，但書：待有人力且使用者開需求再評估開發 | uniray7 |
 | 2026-07-16 | Table DDL 開放直接執行（修訂） | 因使用者以 dbt 處理資料（高頻 create/drop 暫時表），撤回「table 也代建」：**database DDL 代建、table DDL 直接打 Doris**。表級保護改 cluster/db 級預設值＋巡檢告警；table 舉證完全依賴 audit log；table 級宣告（TTL/敏感性）改選用登記 | uniray7 |
-| 2026-07-16 | Table DDL 雙軌制（再修訂，定案） | 自建之外增設「平台代建」為**可選建議路徑**：代建表獲事前攔截＋property 注入＋事後告警（drift 偵測），平台對建成當下設定負責、**ALTER 即責任轉移**；自建表平台零責任。**巡檢不分軌涵蓋全部表**（cluster 自保、不構成背書）。配套：dbt 與代建互斥、table id 識別、清冊對使用者可視、短命表排除 | uniray7 |
-| 2026-07-16 | Cluster 穩定性責任框架 | 四層防線：代建攔截（選用）／上限封頂（**強制全域**，不經手也生效）／巡檢偵測／恢復＋**緊急介入權**（危及 cluster 存活時可先處置後通知，條款進對外規範）。對外承諾措辭＝「弄不沉、劣化會叫、沉了會救、誰弄的有證據」，**不保證不變慢**。CCR lag 受寫入行為影響 → RPO best-effort 的依據 | uniray7 |
+| 2026-07-16 | Table DDL 雙軌制（再修訂）→ **07-17 被推翻，降為放寬預案** | 自建之外增設「平台代建」為**可選建議路徑**：代建表獲事前攔截＋property 注入＋事後告警（drift 偵測），平台對建成當下設定負責、**ALTER 即責任轉移**；自建表平台零責任。**巡檢不分軌涵蓋全部表**（cluster 自保、不構成背書）。配套：dbt 與代建互斥、table id 識別、清冊對使用者可視、短命表排除 | uniray7 |
+| 2026-07-16 | Cluster 穩定性責任框架 | 四層防線：代建攔截／上限封頂（**強制全域**，不經手也生效）／巡檢偵測／恢復＋**緊急介入權**（危及 cluster 存活時可先處置後通知，條款進對外規範）。對外承諾措辭＝「弄不沉、劣化會叫、沉了會救、誰弄的有證據」，**不保證不變慢**。CCR lag 受寫入行為影響 → RPO best-effort 的依據 | uniray7 |
+| 2026-07-17 | **Table DDL 政策反轉：一律平台代建（先緊縮後放寬）** | 推翻 07-16 雙軌制。理由：治理的不可逆方向性——**放寬是送禮、收回是毀約**，先開放再收回是 breaking change；無正式需求前取防護最強、責任最簡單的形態。雙軌制（形態 A）與「全自建＋最佳實踐/權責/使用限制文件」（形態 B，07-17 討論產出）完整分析降為**放寬預案**（RFC-003 §9），觸發＝使用者正式提出 dbt/高頻建表需求。已識別代價：代建摩擦×迭代速度（API/GUI 優先級提高）、dbt 需求可能上線初期即觸發、**「帳號自理＋GRANT 權」與「不授予 DDL 權限」衝突**（傾向初始帳號不含 GRANT_PRIV，列首要待驗證） | uniray7 |
+| 2026-07-17 | Managed curated zone 開放自建：**擱置** | 曾討論開放 managed 的 curated zone 自由建表供 dbt（tmp/raw 維持代建；「原料層平台保真、加工層使用者自由」與 Databricks gold 用法一致）。同「先緊縮」邏輯一併擱置；重啟前置問題記於 RFC-003 §9：managed 備份/保留承諾對自建 curated 表是否成立（傾向責任跟建表走）、shared cluster 租戶互害需 db 級 data/replica quota 圈住（待驗證） | uniray7 |
 
 ## 試點回饋（Phase 9）
 

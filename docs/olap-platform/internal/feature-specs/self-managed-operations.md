@@ -11,7 +11,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 
 使用者另提出「**指定 table 的 row filtering / column masking**」需求——是否由平台承接**未決**（open issue #3，候選 RFC；與「cluster 內權限使用者自理」的邊界衝突見責任歸屬矩陣註記）。
 
-> ⚠️ **2026-07-16 重大修訂進行中**：self-managed 的 DDL 治理與資料管理 R&R 已立 [RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 待 manager 決策。已定前提：**database DDL 走代建流程**；**table DDL 雙軌**——平台代建（事前攔截＋property 注入＋事後告警，平台對建成當下設定負責）或自建（直接打 Doris、dbt 相容，**平台零責任**）；**儲存健康巡檢不分軌涵蓋全部表**（cluster 自保）。RFC-003 定案後，本 spec 的責任歸屬矩陣與「Schema 設計與 DDL」等條目將依決議改寫。
+> ⚠️ **2026-07-17 重大修訂進行中**：self-managed 的 DDL 治理與資料管理 R&R 已立 [RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 待 manager 決策。已定前提（07-17 改訂）：**DDL（database＋table，含 ALTER/DROP）一律走平台代建流程**——初期緊縮政策（先緊縮後放寬），事前攔截＋保護性 property 注入，使用者帳號不授予 DDL 權限；**儲存健康巡檢與封頂防線涵蓋全部表**（cluster 自保）。曾定案的 table 雙軌制（07-16）降為**放寬預案**（RFC-003 §9），dbt/高頻建表需求正式提出時再啟動。RFC-003 定案後，本 spec 的責任歸屬矩陣等條目將依決議改寫。
 
 ## 平台提供的內容
 
@@ -78,10 +78,11 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 | 使用問題/新版本/新功能/建表諮詢/效能優化 | 依 PM request 排優先權，**非義務** | 提 request 給 PM |
 | Doris 版本升級 | 提 request → PM 排優先權決定；核准後平台執行 | 提出需求 |
 | 資料寫入/pipeline | | ✅ |
-| Schema 設計與 DDL | | ✅（建表諮詢可提 PM request，不保證承接） |
+| DDL 執行（database＋table，含 ALTER/DROP） | ✅ 代建：驗證（語法/危險操作/撞名）＋保護性 property 注入（RFC-003 前提） | 提交申請 |
+| Schema 設計品質 | ❌ 不審不揹 | ✅（建表諮詢可提 PM request，不保證承接） |
 | 備份/還原 | ❌ 不提供（RFC-003 子決策暫定甲：誤刪/誤操作一律不救援、明文免責；平台保存 DDL 申請紀錄 + Doris audit log〔規劃 ELK〕作舉證） | ✅ 自行負責 |
 | 查詢效能調校 | | ✅（優化協助可提 PM request，不保證承接） |
-| 帳號/權限管理（cluster 內） | | ✅ |
+| 帳號/權限管理（cluster 內） | | ✅ ⚠️（與「使用者帳號不授予 DDL 權限」的技術強制有衝突——擁有 GRANT 權即可自行開回 DDL；解法見 RFC-003 §8 隱患 3，傾向初始帳號不含 GRANT_PRIV、帳號管理收回平台） |
 | 配額與用量申報 | | ✅（超標處理見 cluster-tiering） |
 
 ## 行為規格
@@ -96,7 +97,8 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 | 6 | 使用者把 cluster 打掛（誤設定/超載） | 平台恢復「系統可用」狀態（進程/節點層）；資料修復與根因排除由使用者自理，如需平台協助提 request 給 PM（不保證承接） |
 | 7 | CCR sync lag 超門檻 | infra 告警送 ws 聯絡人 + 平台排查鏈路；**告警標明成因**——鏈路問題屬平台責任、寫入量超出 CCR 承載屬使用者責任（由使用者降載處置） |
 | 8 | Active cluster 故障 | 平台介入執行 failover 至 standby（觸發條件/判定者待決）；failover 後資料完整性由使用者驗證，落差處理依 RPO 免責措辭（Phase 5） |
-| 9 | 使用者新建 database/table | CCR cluster 層級同步自動涵蓋（2026-07-14 確認），無需人工操作；新物件初次同步期間的 lag 屬正常行為 |
+| 9 | 使用者需要新建/變更/刪除 database 或 table | 提交代建申請 → 平台驗證後執行（RFC-003 前提，初期人工；時效預期 Phase 5 定）；CCR cluster 層級同步自動涵蓋新物件（2026-07-14 確認），初次同步期間的 lag 屬正常行為 |
+| 10 | 使用者要求 dbt 直連建表（高頻 create/drop） | 現階段不支援（全代建政策）；引導透過 PM 管道正式提出需求 → 觸發 RFC-003 §9 放寬預案討論 |
 
 ## 與其他功能的依賴關係
 - 開通交付內容與 WAITING_FOR_CAPACITY 狀態依 **workspace-application**。

@@ -48,7 +48,7 @@
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
   - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + 初始帳號（不建 zone databases，命名自由）
   - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間
-- 完成後交付：連線資訊、初始管理帳號、配額明細、快速開始文件連結（依模式給對應文件：managed 給 pipeline/DDL 申請指南，self-managed 給責任歸屬與告警說明）。
+- 完成後交付：連線資訊、初始管理帳號、配額明細、快速開始文件連結（依模式給對應文件：managed 給 pipeline/DDL 申請指南，self-managed 給責任歸屬、**DDL 代建提交管道**（RFC-003：database＋table 一律代建）與告警說明）。
 
 ## 投影片 Template 規格
 

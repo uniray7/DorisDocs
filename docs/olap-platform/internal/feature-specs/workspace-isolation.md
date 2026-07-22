@@ -52,7 +52,7 @@
 | 動作 | 內容 |
 |------|------|
 | `provision_ws(ws, mode, tier)` | 建立 databases（managed）、ws 管理帳號、workload group（shared）、GRANT 授權、Kafka topic + ACL（managed）、corrupted data prefix（managed） |
-| `suspend_ws(ws)` | 撤銷登入/查詢權限，保留資料（欠費/違規/閒置） |
+| `suspend_ws(ws)` | 撤銷登入/查詢權限，保留資料（違規/閒置；**目前無付費機制，不含欠費**，2026-07-14 決議） |
 | `decommission_ws(ws)` | 回收帳號 → 資料清除（含 Kafka topic、corrupted data）→ 釋放資源；清除有紀錄可稽核 |
 
 ## 行為規格（驗收時逐條測試）

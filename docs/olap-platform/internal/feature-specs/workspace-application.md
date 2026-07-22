@@ -88,7 +88,7 @@ SUBMITTED                               （投影片提交，排入最近的週�
 
 ### Workspace 生命週期狀態機（申請完成後）
 ```
-ACTIVE ⇄ SUSPENDED（違規/欠費/閒置，見 quota 與治理規範）
+ACTIVE ⇄ SUSPENDED（違規/閒置，見 quota 與治理規範；**目前無付費機制，不含欠費**，2026-07-14 決議）
 ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止，含資料清除）
 ```
 

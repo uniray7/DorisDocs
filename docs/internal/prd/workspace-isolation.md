@@ -1,7 +1,6 @@
-# Feature Spec：多租戶隔離（Workspace Isolation）
+# 多租戶隔離（Workspace Isolation）
 
-> 來源：[PRD](README.md) § 6.3
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 
 ## User Story
 
@@ -52,7 +51,7 @@
 | 動作 | 內容 |
 |------|------|
 | `provision_ws(ws, mode, tier)` | 建立 databases、service account、workload group（shared）、GRANT 授權、Kafka topic + ACL（managed）、corrupted data prefix（managed） |
-| `suspend_ws(ws)` | 撤銷登入/查詢權限，保留資料（違規/閒置；**目前無付費機制，不含欠費**，2026-07-14 決議） |
+| `suspend_ws(ws)` | 撤銷登入/查詢權限，保留資料（違規/閒置；目前無付費機制，不含欠費） |
 | `decommission_ws(ws)` | 回收帳號 → 資料清除（含 Kafka topic、corrupted data）→ 釋放資源；清除有紀錄可稽核 |
 
 ## 行為規格（驗收時逐條測試）
@@ -74,10 +73,8 @@
 - 帳號模型細節（人員帳號 vs 服務帳號、權限矩陣）在 **access-control** 展開；本 spec 只定隔離邊界。
 - Managed 寫入路徑限制與 **streaming/batch-ingestion**、**ddl-governance** 銜接（僅平台 pipeline 帳號可寫 raw；使用者 ELT 只可寫 curated）。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 驗收標準（Acceptance Criteria）
 - [ ] 行為規格表 8 條全數通過（含三項 ⚠️ metadata 洩漏驗證）

@@ -3,7 +3,7 @@
 - 狀態：草稿（**待 manager 決策**）
 - 作者：平台團隊
 - 日期：2026-07-16（**2026-07-17 修訂**：table DDL 政策改為一律平台代建，原雙軌制降為放寬預案 §9）
-- 相關：`internal/prd/README.md § 6.8`、`internal/prd/self-managed-operations.md`、open issue #3（row/column filter）
+- 相關：`internal/prd/README.md § 6.8`、`internal/prd/self-managed-operations.md`、TBD-5（row/column filter）
 - 環境前提：Apache Doris 4.1.4；HA 為每個 table 3 個 replica（2026-11-19 決議，取代原雙 cluster＋CCR）
 
 ---
@@ -84,7 +84,7 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 
 - **Database 建立時宣告**（內建在代建表單，皆可日後修改）：
   - **TTL/retention**：使用者指定保留期 → 平台檢查後執行清理，清理失敗/未生效時告警
-  - **敏感性**：是否含敏感資料 → 銜接 open issue #3（row/column masking）與 PII 治理（open issue #5）
+  - **敏感性**：是否含敏感資料 → 銜接 TBD-5（row/column masking）與 PII 治理（TBD-6）
   - （備份宣告屬 §5 乙案，暫不提供）
 - **Table 建立時宣告**：全代建下宣告直接內建在建表表單（TTL 覆寫、重要性標記等），**涵蓋率天然 100%**，無需另設登記機制。
 - **物件清冊**：全部物件由代建紀錄產生（完整、即時）；輔以 metadata 週期對帳，偵測繞道操作與紀錄遺漏。**清冊對使用者可視**。
@@ -94,7 +94,7 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 | 責任邊界最誠實：平台只承諾「執行宣告＋掉了會叫」，不假裝懂語義 | 與 managed 模型不一致（但本來就是兩種模式） |
 | 宣告內建於必經的代建流程，涵蓋率 100% | 平台要維護宣告清冊系統 |
 | 宣告可事後修改（名字不行） | |
-| 為 row/column masking（open issue #3）鋪好同一套宣告機制 | |
+| 為 row/column masking（TBD-5）鋪好同一套宣告機制 | |
 
 ### 三選項比較
 
@@ -115,7 +115,7 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 | | **甲：不提供備份/還原（暫定採用）** | **乙：宣告制備份（保留為未來選項）** |
 |---|---|---|
 | 內容 | 平台不做任何備份；誤刪/誤操作/資料丟失**一律不救援**，使用者自行負責（含自建備份） | 使用者宣告「要備份、頻率、保留份數」→ 平台按宣告執行 Doris BACKUP 至 MinIO，監控備份 job 成功率（靜默失敗即告警） |
-| 配套 | **舉證機制**：DDL（含 DROP database/table）皆有代建申請紀錄；DML 舉證依 **Doris audit log**（規劃集中至 ELK）——證據鏈完整，前提是 audit log 保存不可中斷（保留期 Phase 5/6 定）；對外文件**明文免責** | 責任切分：平台對「忠實執行宣告」負責；宣告內容正確性、未宣告物件的丟失歸使用者 |
+| 配套 | **舉證機制**：DDL（含 DROP database/table）皆有代建申請紀錄；DML 舉證依 **Doris audit log**（規劃集中至 ELK）——證據鏈完整，前提是 audit log 保存不可中斷（保留期 TBD-15 定）；對外文件**明文免責** | 責任切分：平台對「忠實執行宣告」負責；宣告內容正確性、未宣告物件的丟失歸使用者 |
 | 成本 | 零開發、零維運 | 備份排程、還原流程、儲存空間、監控——需開發與常態維運 |
 | 風險 | 第一個誤刪重要資料的使用者無法救援（免責擋得住責任，擋不住觀感） | 涵蓋率與宣告正確性的邊際糾紛；維運負擔 |
 
@@ -138,7 +138,7 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 | 稽核舉證 | ✅ DDL 皆有代建申請紀錄；DML 依 **Doris audit log**（規劃 ELK） | |
 | TTL 清理（使用者於代建表單宣告保留期） | ✅ 執行清理；失敗/未生效時告警 | 保留期正確性 |
 | 資料流向/血緣、資料正確性 | ❌ | ✅（寫入路徑在使用者手上） |
-| Row filtering / column masking | 待 open issue #3 決議（若承接，走同一套宣告機制） | 政策內容、schema 變更後重新宣告 |
+| Row filtering / column masking | 待 TBD-5 決議（若承接，走同一套宣告機制） | 政策內容、schema 變更後重新宣告 |
 
 > **選 Option 1/2 的差異**：上表全部成立，僅另加「zone 段＝預設值包縮寫」——Option 3 用表單預設值同樣做得到。**R&R 實質差異：無**（同仁「option 2/3 R&R 無差別」的判斷正確）。
 
@@ -173,7 +173,7 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 
 | # | 隱患 | 配套 |
 |---|------|------|
-| 1 | **代建摩擦 × 迭代速度**：table DDL 全部要申請（連 `CREATE TABLE AS` 做個中間表也是），self-managed 客群定位是「高客製、有能力自管」的團隊，建表頻率可能不低，初期人工執行恐成瓶頸、累積不滿 | 對外預告執行時效預期（如 N 個工作日內，Phase 5 定數字）；申請支援批次提交；**DDL 提交管道的 API/GUI 化優先級因此提高**（承載全部 DDL 流量） |
+| 1 | **代建摩擦 × 迭代速度**：table DDL 全部要申請（連 `CREATE TABLE AS` 做個中間表也是），self-managed 客群定位是「高客製、有能力自管」的團隊，建表頻率可能不低，初期人工執行恐成瓶頸、累積不滿 | 對外預告執行時效預期（如 N 個工作日內，TBD-15 定數字）；申請支援批次提交；**DDL 提交管道的 API/GUI 化優先級因此提高**（承載全部 DDL 流量） |
 | 2 | **dbt 需求可能很快出現**：「等正式提出需求」可能上線初期即觸發（已知使用者以 dbt 處理資料的可能性高） | 放寬預案已完整分析備妥（§9）——觸發時執行預案、不重新吵一輪；對外文件明示「目前不支援 dbt 直連建表，有此需求請透過 PM 管道提出」，把需求逼到檯面上 |
 | 3 | **權限收不乾淨則政策虛設**：政策的技術強制依賴「使用者帳號無任何 DDL 權限」。但既有前提是 self-managed「cluster 內帳號/權限自理」——**擁有 GRANT 權的使用者可以自己開回 DDL 權限**，兩者直接衝突 | 需擇一：(a) 初始帳號不含 GRANT_PRIV，帳號/權限管理收回平台代管（動到「帳號自理」前提，牽動 access-control spec）；(b) DDL 收回僅為**政策約束**（技術上可繞、繞了以 audit log 舉證＋違規處理）。**傾向 (a)**——緊縮政策靠自律執行等於沒有政策；列 §11 首要待驗證＋access-control 增修 |
 | 4 | **巡檢的隱含責任**：沒抓到爛況、cluster 被拖垮時，使用者反咬「巡檢失職」 | 對外措辭寫死：巡檢為 best-effort 的 cluster 自保機制，未告警不代表沒問題、不構成背書 |
@@ -209,13 +209,13 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 ## 10. 對既有文件/決議的衝擊（定案後回填）
 
 - `internal/prd/self-managed-operations.md`：責任矩陣併入 §6；橫幅前提改為全代建；行為規格「使用者新建 database/table」改為經代建流程。
-- `internal/prd/README.md`：self-managed 術語定義（「可自行執行 DDL」→「DDL 一律平台代建，初期緊縮」）；§6.8；open issue #8。
+- `internal/prd/README.md`：self-managed 術語定義（「可自行執行 DDL」→「DDL 一律平台代建，初期緊縮」）；§6.8；TBD-8。
 - `internal/prd/workspace-application.md`：佈建交付項增加 DDL 提交管道與指南說明。
 - `internal/prd/access-control.md`：self-managed 帳號**不授予任何 DDL 權限**；「cluster 內帳號/權限自理」前提與 GRANT 權衝突需依 §8 隱患 3 決議增修；row/column filter 的政策漂移問題因 DDL 經手平台而可在代建驗證時攔截提醒。
 - `product-overview.md`：模式對照表「建表/改表：完全自由」改寫；待拍板清單補 RFC-003。
 - `00-progress.md`：使用者需求清單第 2 條的決議狀態。
-- **對外使用規範（Phase 8）**：DDL 申請流程與執行時效預期；「目前不支援 dbt 直連建表，需求請提出」明示；緊急介入權條款；穩定性承諾四層措辭（弄不沉/會叫/會救/有證據，不保證不變慢）；**觸頂行為預先說明**（-235 拒寫、磁碟停寫波及同 BE 正常表——屬防線正常運作）；巡檢 best-effort 免責。
-- 新增平台元件：DDL 提交/驗證/代建管道（初期人工＋內部工具，之後 API/GUI）——**優先級提高**（承載全部 database＋table DDL 流量），納入 system-architecture（Phase 8）。
+- **對外使用規範（階段 5）**：DDL 申請流程與執行時效預期；「目前不支援 dbt 直連建表，需求請提出」明示；緊急介入權條款；穩定性承諾四層措辭（弄不沉/會叫/會救/有證據，不保證不變慢）；**觸頂行為預先說明**（-235 拒寫、磁碟停寫波及同 BE 正常表——屬防線正常運作）；巡檢 best-effort 免責。
+- 新增平台元件：DDL 提交/驗證/代建管道（初期人工＋內部工具，之後 API/GUI）——**優先級提高**（承載全部 database＋table DDL 流量），納入 system-architecture（階段 5）。
 
 ## 11. 待驗證項（實作時）
 
@@ -223,7 +223,7 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 - [ ] **Cluster/database 級保護性預設**：replication 等預設值在 4.1.4 的設定點與生效行為（FE config / db property）
 - [ ] **FE 層上限參數**：可封頂最壞情況的參數清單（tablet 數、partition 數、磁碟水位等）
 - [ ] 危險操作攔截清單（代建驗證用，含 DROP 二次確認）
-- [ ] Doris audit log 集中保存管道（規劃 ELK）與保留期（Phase 5/6 定案）
+- [ ] Doris audit log 集中保存管道（規劃 ELK）與保留期（TBD-15 定案）
 - [ ] 宣告清冊的存放與稽核（平台側系統）；metadata 週期對帳的實作點
 - [ ] （僅 §5 乙案啟動時）Doris BACKUP/RESTORE 的物件粒度（DR 方向見 `internal/prd/ha-dr.md`）
 - [ ] （僅 §9 放寬觸發時）dbt on Doris 行為（自動建 schema 關閉指引、materialization 暫時表樣態）；table id 追蹤與 drift 偵測；巡檢短命表排除參數；引擎級 replication 強制 config；database 級 data/replica quota

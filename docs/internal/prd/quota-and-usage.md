@@ -1,7 +1,6 @@
-# Feature Spec：配額與用量可視化
+# 配額與用量可視化
 
-> 來源：[PRD](README.md) § 6.9
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 
 ## 定位
 
@@ -11,9 +10,9 @@
 
 | 計量 | 定義 | 決議來源 |
 |------|------|---------|
-| 儲存用量 | Doris **壓縮後實際占用**（含副本 ⚠️ 待確認：配額計單副本或全副本） | Decision Log 2026-07-13 |
+| 儲存用量 | Doris **壓縮後實際占用**（含副本 ⚠️ 待確認：配額計單副本或全副本） | [decision-history](../../decision-history.md) |
 | 儲存計入範圍（managed） | raw + curated + **corrupted data + batch landing 殘留** | streaming/batch spec 行為規格 |
-| QPS | **5 分鐘滑動窗口平均**判超標；瞬間爆量由 workload group 併發兜底 | Decision Log 2026-07-13 |
+| QPS | **5 分鐘滑動窗口平均**判超標；瞬間爆量由 workload group 併發兜底 | [decision-history](../../decision-history.md) |
 | QPS 資料來源 | **Gateway 計量**（RFC-002 第 1 層）；與 Doris audit log 對賬。⚠️ Arrow Flight 查詢的計量路徑待 RFC-002 驗證（gateway 以 MySQL protocol 為前提） | RFC-002 |
 
 ## 使用者可見內容（Web Console 儀表板）
@@ -40,7 +39,7 @@
 | # | 情境 | 行為 |
 |---|------|------|
 | 1 | 儲存占用達配額 80% | 儀表板標示 + 強制告警送聯絡人（cluster-topology-and-tiering 早期預警） |
-| 2 | 儲存達 100% | 依 cluster-topology-and-tiering 超標政策（限流/擋寫入 ⚠️ 政策細節與「不願升級」處理待拍板 #4）；儀表板顯著標示 |
+| 2 | 儲存達 100% | 依 cluster-topology-and-tiering 超標政策（限流/擋寫入 ⚠️ 政策細節與「不願升級」處理TBD-4）；儀表板顯著標示 |
 | 3 | QPS 滑動平均超 tier 上限 | 記錄超標事件 + 通知；gateway 限流行為依 RFC-002 |
 | 4 | 查詢被 kill policy 終止 | 事件進「被 kill 查詢清單」，含觸發規則與建議（如：補分區條件） |
 | 5 | 使用者查他人用量 | 不可能：所有視圖以 ws 為邊界（workspace-isolation） |
@@ -49,7 +48,7 @@
 ## 平台側視角（內部）
 
 - 平台管理員看全 cluster/全 ws 匯總：容量水位（硬體採購依據）、各 ws 用量排名、超標事件、shared cluster 的 workload group 指標（RFC-002 監控項）。
-- 此視角同時服務計費報表（chargeback/showback，待拍板 #1）。
+- 此視角同時服務計費報表（chargeback/showback，TBD-3）。
 
 ## API 邏輯
 
@@ -66,18 +65,16 @@
 - QPS 計量來源與 kill 事件：**RFC-002**（gateway、workload schedule policy）。
 - corrupted/landing 占用明細：**streaming/batch-ingestion**。
 - 視圖的 ws 邊界：**workspace-isolation**（metadata 隔離延伸到監控資料）。
-- 配額數值、refresh 週期、計費模式：Phase 5。
+- 配額數值、refresh 週期、計費模式：TBD-15。
 
 ## 待確認事項
 1. 儲存配額計單副本還是全副本（影響使用者理解的「可用空間」）。
 2. Self-managed 是否納入 tier 計量展示與超標政策。
-3. 達 100% 的處置（限流 vs 擋寫入）與「超標但不願升級」——待拍板 #4。
+3. 達 100% 的處置（限流 vs 擋寫入）與「超標但不願升級」——TBD-4。
 4. 用量資料保留時長（時間序列存多久）。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 驗收標準（Acceptance Criteria）
 - [ ] 儲存/QPS 計量與定義一致（壓縮後、5 分鐘滑動窗口），與 gateway/audit log 對賬誤差在容許範圍

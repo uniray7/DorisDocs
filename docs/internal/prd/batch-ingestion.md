@@ -1,7 +1,6 @@
-# Feature Spec：Batch Ingestion Pipeline（僅 Managed）
+# Batch Ingestion Pipeline（僅 Managed）
 
-> 來源：[PRD](README.md) § 6.6
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 > ⚠️ **tmp zone 已取消（2026-11-19）**：本文件「落 tmp → 使用者 merge SQL → raw」的流程待改寫（TBD-28）。改寫前，涉及 tmp 與 merge SQL 的段落僅供參考。
 > ⚠️ **本篇多處為平台預設草案**：batch 的脈絡傾倒尚未進行，以下設計按常見做法起草，標 ⚠️ 處皆待團隊確認（見文末「待確認假設清單」）。
 
@@ -42,7 +41,7 @@ curated zone（免審）
 | Future | Lakehouse → Doris 通道（PRD § Future） | 作為新 source type 接入，staging 的 lakehouse 匯入機制為前身 |
 
 - 檔案命名慣例與 landing 路徑結構（如 `{landing}/{job}/{date}/...`）實作時定；平台以「路徑 + 檔名 pattern」界定一個 job 的輸入範圍。
-- 單檔大小上限、單批檔案數上限：Phase 5 配額定案。
+- 單檔大小上限、單批檔案數上限：TBD-15 配額定案。
 
 ## User Story
 
@@ -78,9 +77,9 @@ curated zone（免審）
 | 2 | 行級錯誤（型別不符、欄位數不符） | 錯誤行落 corrupted data 路徑（含原始行 + 失敗原因 + 來源檔名/行號），計數告警；錯誤率超過門檻（預設 ⚠️ 如 10%）整批標 FAILED 不落地，防止半批髒資料進 tmp |
 | 3 | 整檔不可解析（損毀、格式不符宣告） | 該檔標 FAILED + 告警，留在 landing 供使用者修正；同批其他檔案照常處理 |
 | 4 | 傳遞語義 | 檔案級 exactly-once（load label 冪等）；但上游重複產檔（同內容不同檔名）平台不去重——**merge SQL 仍須冪等**（與 streaming 同一要求，對外文件明示） |
-| 5 | 已匯入檔案的處置 | 匯入成功後移至 processed prefix（保留 N 天後清除，N 待 Phase 5）⚠️；landing 殘留檔案計入儲存配額 |
+| 5 | 已匯入檔案的處置 | 匯入成功後移至 processed prefix（保留 N 天後清除，N 待 TBD-15）⚠️；landing 殘留檔案計入儲存配額 |
 | 6 | Merge SQL 執行失敗 | 告警 + 重試（次數/間隔待定，與 streaming 對齊）；連續失敗 job 標 ERROR，tmp 資料保留不丟 |
-| 7 | tmp zone 清理 | 平台依 retention 政策清理已 merge 的 tmp 資料（與 streaming 同一政策，Phase 5/6） |
+| 7 | tmp zone 清理 | 平台依 retention 政策清理已 merge 的 tmp 資料（與 streaming 同一政策，TBD-15） |
 | 8 | 配額 | landing + tmp + corrupted data 占用計入 ws 儲存配額；批次匯入吞吐受 shared cluster 寫入側治理（RFC-002 第 4 層：錯峰排程、批次大小治理） |
 
 ## API 邏輯
@@ -104,20 +103,18 @@ curated zone（免審）
 | 422 | `WS_NOT_MANAGED` | self-managed ws 嘗試建 batch job |
 | 422 | `RAW_TABLE_NOT_APPROVED` | merge SQL 目標不是經 DDL 治理流程核准建立的 raw table |
 | 422 | `MERGE_SQL_SCOPE_VIOLATION` | merge SQL 讀寫範圍超出「讀 tmp 寫 raw（同 ws）」 |
-| 409 | `JOB_LIMIT_REACHED` | 超過 ws 的 batch job 數量上限（上限值 Phase 5） |
+| 409 | `JOB_LIMIT_REACHED` | 超過 ws 的 batch job 數量上限（上限值 TBD-15） |
 | 409 | `RUN_ALREADY_IN_PROGRESS` | 前一批尚未完成時手動觸發（不允許併發 run） |
 
 ## 與其他功能的依賴關係
 - 目標 raw table 需先經 **ddl-governance** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
 - Landing/corrupted data 路徑、tmp table 的 per-ws 隔離依 **workspace-isolation**；寫入側治理參數依 **RFC-002**。
-- 指標與配額計入 **quota-and-usage**；tmp/processed 清理政策 Phase 5/6 定案。
+- 指標與配額計入 **quota-and-usage**；tmp/processed 清理政策 TBD-15 定案。
 - Staging 版 batch job 行為一致（**staging-validation** 可測此流程）。
 - Future lakehouse 通道：以新增 source type 方式擴充本 spec，不另立寫入路徑。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 待確認假設清單（脈絡傾倒待補）
 

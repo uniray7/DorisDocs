@@ -1,7 +1,6 @@
 # PRD：OLAP Platform（以 Apache Doris 為基礎的內部 OLAP 服務）
 
-> 來源脈絡：[00-progress.md](../../00-progress.md) Phase 1 脈絡摘要
-> 狀態：大綱版（Phase 2），各章節細節將於後續 Phase 補齊
+> 來源脈絡：[00-progress.md](../../00-progress.md) 現況摘要｜狀態：草稿（§1–3、§8–10 尚待補齊）
 
 ## 1. 背景與問題陳述
 > 要填：Oracle license 成本與綁定問題、HBase 維運負擔、各部門重複自建分析方案的現況。為什麼現在做——sunset 舊 tech stack 的公司方向。
@@ -21,7 +20,7 @@
 | Fab | 工廠據點。Workspace 申請時指定要在哪些 fab 使用服務（至少兩個）；平台在每個 fab 各自提供相同數量、彼此獨立的 Doris 服務，不跨 fab 部署，各 fab 各自指定 shared 或 dedicated。 | 與 HA 無關 |
 | Shared Cluster | 多個 tier 1 workspace 共用的 Doris cluster，以 resource group 隔離運算。 | 資料仍完全隔離，「共用」僅指硬體 |
 | Dedicated Cluster | 單一 workspace 專屬的 Doris cluster（tier 2 以上）。 | |
-| Tier | Workspace 的資源等級（1/2/3），由 data volume 與 QPS 決定（門檻待 RFC-001 修正）。 | 儲存與運算是否解耦待決 |
+| Tier | Workspace 的資源等級（1/2/3），由 data volume 與 QPS 決定（門檻待修正，TBD-1）。 | 儲存與運算是否解耦待決 |
 | Resource Group | Doris 的運算資源隔離機制，用於 shared cluster 內限制單一 ws 的 CPU/記憶體用量。 | 不是資料隔離機制 |
 | Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | |
 | Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
@@ -64,31 +63,26 @@
 - **Lakehouse → Doris 灌資料通道**：作為正式 ingestion 路徑（非僅 staging 測試用）。batch pipeline 的來源介面應預留擴充空間；staging 的 lakehouse 匯入機制可視為前身。
 
 ## 6. 核心功能大綱
-> Phase 3 逐項展開成 `<feature>.md`，此處放連結。
+> 各 feature 的細節見同資料夾的文件。
 
-1. **Workspace 申請與審核**（workspace-application.md）——**純人工流程**：使用者依投影片 template 填入需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），於每週三申請會議報告，平台以公式推算 tier 並審核；無自動化 API（留作 roadmap）。
-2. **Staging 驗證**（staging-validation.md）——申請核准後租借固定小規格的 staging 試用環境、灌測試資料（假資料或自 lakehouse 匯入）、提交設計合理性報告（效能數據僅供參考），通過才開通正式環境。
-3. **多租戶隔離**（workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
-4. **Cluster 拓撲與 tier**（cluster-topology-and-tiering.md）——fab 與 cluster 拓撲、shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
-5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（streaming-ingestion.md）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；tmp zone 取消後寫入 raw 的流程待改寫（TBD-28）；format 驗證失敗落 MinIO corrupted data 路徑並告警。
-6. **Batch ingestion pipeline（僅 managed）**（batch-ingestion.md）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
-7. **DDL 治理**（ddl-governance.md）——database 由平台建立；managed raw 由平台建立（是否審核：TBD-7）、curated 由 service account 直接建立（TBD-30）；self-managed 一律平台代建（TBD-29）。含開放直接 DDL 的風險與可研究的防護。
-8. **Self-managed 營運支援**（self-managed-operations.md）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
-9. **配額與用量可視化**（quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
-10. **帳號模型與查詢協定**（access-control.md）——帳號全由平台管理、資料存取一律透過 service account；MySQL protocol 與 Arrow Flight SQL。
-11. **授權**（authorization.md）——Authorization PRD v0.12：平台管理 Console 的 user 建立與 grant／revoke、owner 讀權分享、Doris privilege 對照、OPA 長期方向。
-12. **HA／DR**（ha-dr.md）——3 replica 容錯；中長期分散到 3 機櫃或 3 datacenter（TBD-9）；DR 以 backup／restore 到 S3 或 MinIO（TBD-36）。
-13. **資料搬遷**（data-migration.md）——為何需要在 cluster 之間搬遷、共通要求、候選做法（TBD-35）。
-14. **監控與告警**（monitoring-alerting.md）——各類告警的現況整理（TBD-33）。
-15. **Web Console**（web-console.md）——Tool Team 負責的 Admin 後台與使用者功能範圍。
+1. **Workspace 申請與審核**（[workspace-application.md](workspace-application.md)）——**純人工流程**：使用者依投影片 template 填入需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），於每週三申請會議報告，平台以公式推算 tier 並審核；無自動化 API（留作 roadmap）。
+2. **Staging 驗證**（[staging-validation.md](staging-validation.md)）——申請核准後租借固定小規格的 staging 試用環境、灌測試資料（假資料或自 lakehouse 匯入）、提交設計合理性報告（效能數據僅供參考），通過才開通正式環境。
+3. **多租戶隔離**（[workspace-isolation.md](workspace-isolation.md)）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
+4. **Cluster 拓撲與 tier**（[cluster-topology-and-tiering.md](cluster-topology-and-tiering.md)）——fab 與 cluster 拓撲、shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
+5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（[streaming-ingestion.md](streaming-ingestion.md)）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；tmp zone 取消後寫入 raw 的流程待改寫（TBD-28）；format 驗證失敗落 MinIO corrupted data 路徑並告警。
+6. **Batch ingestion pipeline（僅 managed）**（[batch-ingestion.md](batch-ingestion.md)）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
+7. **DDL 治理**（[ddl-governance.md](ddl-governance.md)）——database 由平台建立；managed raw 由平台建立（是否審核：TBD-7）、curated 由 service account 直接建立（TBD-30）；self-managed 一律平台代建（TBD-29）。含開放直接 DDL 的風險與可研究的防護。
+8. **Self-managed 營運支援**（[self-managed-operations.md](self-managed-operations.md)）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
+9. **配額與用量可視化**（[quota-and-usage.md](quota-and-usage.md)）——使用者查看自己的配額、用量、查詢效能。
+10. **帳號模型與查詢協定**（[access-control.md](access-control.md)）——帳號全由平台管理、資料存取一律透過 service account；MySQL protocol 與 Arrow Flight SQL。
+11. **授權**（[authorization.md](authorization.md)）——Authorization PRD v0.12：平台管理 Console 的 user 建立與 grant／revoke、owner 讀權分享、Doris privilege 對照、OPA 長期方向。
+12. **HA／DR**（[ha-dr.md](ha-dr.md)）——3 replica 容錯；中長期分散到 3 機櫃或 3 datacenter（TBD-9）；DR 以 backup／restore 到 S3 或 MinIO（TBD-36）。
+13. **資料搬遷**（[data-migration.md](data-migration.md)）——為何需要在 cluster 之間搬遷、共通要求、候選做法（TBD-35）。
+14. **監控與告警**（[monitoring-alerting.md](monitoring-alerting.md)）——各類告警的現況整理（TBD-33）。
+15. **Web Console**（[web-console.md](web-console.md)）——Tool Team 負責的 Admin 後台與使用者功能範圍。
 
 ## 7. 多租戶與資源隔離模型
-> 要填：workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Tier 草案（門檻待 RFC 修正）：
-> | Tier | Data Volume | Max QPS | 配置 | 可用服務模式 |
-> |------|------------|---------|------|--------------|
-> | 1 | < 500GB | < 20 | Shared cluster + limited resource | 僅 managed |
-> | 2 | 500GB – 5TB | 20 – 100 | Small dedicated（3 BEs） | managed / self-managed |
-> | 3 | 5TB – 30TB | 100 – 500 | Medium dedicated（5–10 BEs） | managed / self-managed |
+> Workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Fab 拓撲與 tier 表見 [cluster-topology-and-tiering.md](cluster-topology-and-tiering.md)（門檻草案，TBD-1）；隔離機制見 [workspace-isolation.md](workspace-isolation.md)。
 >
 > 服務模式 × 審查與責任分工：
 > | | Managed | Self-managed |
@@ -102,33 +96,27 @@
 > | 平台支援 | 完整 | 日常 infra 告警 + 代操作（scale in/out）；其他需求走 PM request 排優先權 |
 > | 模式轉換 | 不可（需開新 ws 搬資料） | 不可 |
 
-## 8. 非功能需求（Phase 5 補上）
+## 8. 非功能需求（階段 3，數字見 TBD-15）
 > 要填：可用性、查詢延遲 P95/P99、寫入吞吐、擴容機制、計費模式、備援/DR。
 > 已知方向：HA 為 cluster 部署在多台機器、每個 table 3 個 replica；中長期分散到 3 機櫃或 3 datacenter（[ha-dr.md](ha-dr.md)、TBD-9）。DR 未來以 backup／restore 到 S3 或 MinIO（TBD-36）。可用性目標與 RPO/RTO 待量化。
 > 使用規範鬆緊：shared cluster 規範較緊（保護鄰居租戶）；dedicated 較寬鬆（僅防 cluster 整體不穩／no response）。
 
-## 9. 治理與合規（Phase 6 補上）
-> 要填：資料分類與 PII 責任範圍（open issue #5）、RBAC 設計、稽核紀錄、安全審查結論。
+## 9. 治理與合規（階段 3）
+> 要填：資料分類與 PII 責任範圍（TBD-6）、RBAC 設計、稽核紀錄、安全審查結論。
 
 ## 10. 里程碑與時程
-> 要填：目前時程未定、首個目標部門未定（Phase 7 會簽時確認）。
+> 要填：目前時程未定、首個目標部門未定（TBD-20）。
 
-## 11. 待決事項與會簽紀錄（Phase 7）
-| # | 事項 | 狀態 | 備註 |
-|---|------|------|------|
-| 1 | Tier 門檻：儲存/運算解耦 | 待討論 | 候選 RFC |
-| 2 | ~~自寫入的資料管理與責任歸屬~~ | 已解決 | 由服務模式劃分（Decision Log 2026-07-13） |
-| 3 | Row/column filter 做在平台側與否——需求已具體化（2026-07-14）：self-managed 使用者要求對指定 table 做 row filtering / column masking；含政策漂移責任、managed 是否一併提供 | 待討論 | 候選 RFC |
-| 4 | 超過 tier 3 規模的處理方式 | 待討論 | |
-| 5 | 敏感資料/PII 的平台責任範圍 | 待討論 | |
-| 6 | ~~Self-managed 代操作計費方式~~ → 2026-07-14 決議：目前無任何付費機制、代操作不收費 | 已決議 | 未來計費與否併入計費模式決策（open issue #1 類別，Phase 5） |
-| 7 | **Managed 的 DDL/schema 治理模式** | **待 PM/管理層決定** | 方案 A：ws owner approve、平台不審、選配建議（審核成本低，schema 品質責任在使用者）；方案 B：平台審核（raw 嚴審/curated 免審）、schema 把關屬平台四大責任（品質可控，審核成本高）。申請時投影片 schema 是否平台審核，同屬此決策 |
-| 8 | **Self-managed 的 DDL 治理形態與資料管理 R&R** | **待 manager 決策（RFC-003）** | 前提已定（07-17 改訂）：**DDL（database＋table，含 ALTER/DROP）一律平台代建**——初期緊縮政策（事前攔截＋保護性注入）；dbt/高頻建表需求正式提出時啟動放寬預案（RFC-003 §9，雙軌制與全自建＋規範文件兩形態已完整分析備存）。選項：1 固定三庫 / 2 強制 zone 命名 / 3 表單宣告制（團隊建議）；子決策：備份/還原暫定不提供（audit log 舉證）。R&R 三案相同，差異在語義承載方式 |
+## 11. 待決事項與會簽（階段 4）
+> 待決事項統一登記在 [00-progress.md 的 TBD 清單](../../00-progress.md#tbd-清單)；會簽結果記到 [decision-history.md](../../decision-history.md)。
 
-## 12. 衍生文件索引（Phase 8 完成後補上）
+- 產品層級：TBD-1（tier 門檻）、TBD-2（超過 tier 3）、TBD-3（計費模式）、TBD-6（PII）、TBD-20（時程）
+- 治理與權限：TBD-5（row／column filter）、TBD-7（raw 建表審核）、TBD-8（self-managed DDL 治理）、TBD-29／30（開放直接建表）、TBD-31（跨 workspace 分享）
+
+## 12. 衍生文件索引（階段 5）
 - System Architecture：`../architecture/system-architecture.md`
 - Data Flow：`../architecture/data-flow.md`
 - RFC：`../rfc/`
 - 對外文件：`../../external/`
 
-> 對外文件結構要求（2026-07-13）：按服務模式分別闡明——managed 須完整涵蓋**使用規範、使用限制、責任歸屬**三者；self-managed 重點為**責任歸屬**（規範/限制僅保護性 config 與告警門檻）。`limits-and-quotas.md` 與 `service-spec.md` 以「模式 × 規範/限制/責任」矩陣呈現。
+> 對外文件結構要求：按服務模式分別闡明——managed 須完整涵蓋**使用規範、使用限制、責任歸屬**三者；self-managed 重點為**責任歸屬**（規範/限制僅保護性 config 與告警門檻）。`limits-and-quotas.md` 與 `service-spec.md` 以「模式 × 規範/限制/責任」矩陣呈現。

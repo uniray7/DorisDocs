@@ -1,7 +1,6 @@
-# Feature Spec：Streaming Ingestion Pipeline（僅 Managed）
+# Streaming Ingestion Pipeline（僅 Managed）
 
-> 來源：[PRD](README.md) § 6.5
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 > ⚠️ **tmp zone 已取消（2026-11-19）**：本文件「落 tmp → 使用者 merge SQL → raw」的流程待改寫（TBD-28）。改寫前，涉及 tmp 與 merge SQL 的段落僅供參考。
 
 ## 概念模型
@@ -34,7 +33,7 @@ curated zone（免審）
 | `db2-xml-cdc` | 依內部規格文件《DB2 XML CDC event format》（不在本 repo，實作時引用） | 原始 XML 存 STRING，關鍵欄位（eventTime/operation 等）由平台 parser 抽出為 columns |
 
 - Format 驗證僅檢查**信封層**（合法 JSON/XML、必要欄位存在、eventTime 可解析）；`data` 內容不驗證——內容的正確性由使用者的 merge SQL 負責（權責分界）。
-- 三種 format 落地路徑完全一致（Decision Log 2026-07-13）；原「自定義 schema 模式」已取消。
+- 三種 format 落地路徑完全一致；原「自定義 schema 模式」已取消。
 
 ## User Story
 
@@ -68,8 +67,8 @@ curated zone（免審）
 | 3 | 傳遞語義 | at-least-once：tmp 可能出現重複事件；**merge SQL 必須自行去重/冪等**（對外文件明示，並提供 Unique Key 表 + 依 eventTime 取最新的範例） |
 | 4 | 順序 | 同 Kafka partition 內有序；跨 partition 不保證——merge 依 `eventTime`（或內部序號）判定新舊，不依讀取順序 |
 | 5 | Merge SQL 執行失敗 | 告警 + 重試（次數/間隔待定）；連續失敗 pipeline 標記 ERROR，tmp 持續累積不丟資料 |
-| 6 | 上游停止/backpressure | Kafka 積壓緩衝；lag 超門檻告警；topic retention 內恢復即不丟資料（retention 時長待 Phase 5 定） |
-| 7 | tmp zone 清理 | 平台依 retention 政策清理已 merge 的 tmp 資料（屬 managed 資料管理責任；政策細節 Phase 5/6） |
+| 6 | 上游停止/backpressure | Kafka 積壓緩衝；lag 超門檻告警；topic retention 內恢復即不丟資料（retention 時長待 TBD-15 定） |
+| 7 | tmp zone 清理 | 平台依 retention 政策清理已 merge 的 tmp 資料（屬 managed 資料管理責任；政策細節 TBD-15） |
 | 8 | 配額 | tmp + corrupted data 占用計入 ws 儲存配額（防止殭屍 pipeline 無限累積） |
 
 ## API 邏輯
@@ -90,18 +89,16 @@ curated zone（免審）
 | 422 | `WS_NOT_MANAGED` | self-managed ws 嘗試建 pipeline |
 | 422 | `RAW_TABLE_NOT_APPROVED` | merge SQL 目標不是經 DDL 治理流程核准建立的 raw table |
 | 422 | `MERGE_SQL_SCOPE_VIOLATION` | merge SQL 讀寫範圍超出「讀 tmp 寫 raw（同 ws）」 |
-| 409 | `PIPELINE_LIMIT_REACHED` | 超過 ws 的 pipeline 數量上限（上限值 Phase 5） |
+| 409 | `PIPELINE_LIMIT_REACHED` | 超過 ws 的 pipeline 數量上限（上限值 TBD-15） |
 
 ## 與其他功能的依賴關係
 - 目標 raw table 需先經 **ddl-governance** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
 - Topic/憑證/corrupted data 路徑的 per-ws 隔離依 **workspace-isolation**。
-- 指標與配額計入 **quota-and-usage**；tmp 清理政策屬 managed 資料管理責任（Phase 5/6 定案）。
+- 指標與配額計入 **quota-and-usage**；tmp 清理政策屬 managed 資料管理責任（TBD-15 定案）。
 - Staging 版 pipeline 行為一致（**staging-validation** 的 ingestion 接通驗證即測此流程）。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 驗收標準（Acceptance Criteria）
 - [ ] 三種 format 各自可建 pipeline、落 tmp、corrupted data 行為一致

@@ -1,7 +1,6 @@
-# Feature Spec：Cluster Tier 分配與升級
+# Cluster Tier 分配與升級
 
-> 來源：[PRD](README.md) § 6.4
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 > 職責邊界：本 spec 管「一個 ws 該落在哪種 cluster/規格、如何變更」；tier 內限制的**執行**（超額拒絕/降級/通知）屬 quota-and-usage。
 
 ## User Story
@@ -25,9 +24,9 @@
 | 1 | < 500GB | < 20 | Shared cluster + workload group | 僅 managed |
 | 2 | 500GB – 5TB | 20 – 100 | Small dedicated（3 BEs，16C/64GB/3.84TB SSD×2） | managed / self-managed |
 | 3 | 5TB – 30TB | 100 – 500 | Medium dedicated（5–10 BEs，32C/128GB/3.84TB SSD×4） | managed / self-managed |
-| >3 | >30TB 或 >500 QPS | — | 人工洽談（open issue #4） | — |
+| >3 | >30TB 或 >500 QPS | — | 人工洽談（TBD-2） | — |
 
-> ⚠️ **門檻待 RFC 定案（open issue #1）**：現行 data volume 與 QPS 綁在同一 tier 不合理（300GB/200QPS 或 20TB 低頻查詢的 ws 無法歸類）。候選方案：儲存與運算**解耦為兩條軸**——儲存量決定磁碟/BE 數下限，QPS 決定 CPU/併發配置，**取兩者較高者**決定 tier。本 spec 的流程設計不依賴門檻數字，門檻改版不影響流程。
+> ⚠️ **門檻待 RFC 定案（TBD-1）**：現行 data volume 與 QPS 綁在同一 tier 不合理（300GB/200QPS 或 20TB 低頻查詢的 ws 無法歸類）。候選方案：儲存與運算**解耦為兩條軸**——儲存量決定磁碟/BE 數下限，QPS 決定 CPU/併發配置，**取兩者較高者**決定 tier。本 spec 的流程設計不依賴門檻數字，門檻改版不影響流程。
 
 ## Tier 判定
 
@@ -41,7 +40,7 @@
 - 系統對每個 ws 持續比對用量 vs tier 上限：
   - **≥80% 上限**：通知 ws 負責人（預警，附升級指引）
   - **持續超標**（連續 N 天 ≥100%，N 待定）：觸發升級評估
-- ⚠️ 待決：升級由使用者申請、平台主動觸發、或兩者皆可？超標但不願升級（成本考量）的 ws 如何處理（限流維持現 tier？寬限期後強制？）——涉及計費模式，與 Phase 5 一併定案。
+- ⚠️ 待決：升級由使用者申請、平台主動觸發、或兩者皆可？超標但不願升級（成本考量）的 ws 如何處理（限流維持現 tier？寬限期後強制？）——涉及計費模式，與 TBD-15 一併定案。
 
 ## 升級流程（tier N → N+1）
 
@@ -60,7 +59,7 @@ TIER_CHANGE_REQUESTED（使用者申請或平台觸發）
 |------|------|------|
 | Tier 1 → 2（shared → dedicated，必為 managed） | 平台負責：新 dedicated cluster 佈建 → 資料搬遷（做法見 [data-migration.md](data-migration.md)）→ 切換連線端點 | 目標：僅切換窗口短暫唯讀 |
 | Tier 2 → 3（dedicated 擴容，managed） | 平台負責：優先原 cluster 加 BE 節點（無資料搬遷）；機型不符時才整座搬遷 | 加節點無停機 |
-| Tier 2 → 3（self-managed） | 屬「scale 代操作」：平台執行加節點，成本反映（見 self-managed-operations） | 加節點無停機 |
+| Tier 2 → 3（self-managed） | 屬「scale 代操作」：平台執行加節點（見 self-managed-operations） | 加節點無停機 |
 | 降級（用量長期遠低於 tier） | 使用者申請；平台評估後執行（縮容或搬回 shared）；不強制 | 同上 |
 
 - 搬遷的共通要求（一致性、停機、寫入處理、名稱不變、帳號權限重建、連線端點）與候選做法見 [data-migration.md](data-migration.md)。
@@ -81,19 +80,17 @@ TIER_CHANGE_REQUESTED（使用者申請或平台觸發）
 | 409 | `TIER_CHANGE_IN_PROGRESS` | 已有進行中的變更 |
 | 422 | `TIER_NOT_AVAILABLE_FOR_MODE` | self-managed 申請降到 tier 1 |
 | 422 | `EXCEEDS_MAX_TIER` | 目標超過 tier 3，導人工洽談 |
-| 409 | `COST_CENTER_CONFIRMATION_REQUIRED` | 成本中心未確認新費用 |
+| 409 | `COST_CENTER_CONFIRMATION_REQUIRED` | 成本中心未確認成本歸屬 |
 
 ## 與其他功能的依賴關係
-- 初次判定輸入來自 **workspace-application**；公式定義於 Phase 5（NFR）。
+- 初次判定輸入來自 **workspace-application**；公式定義於 TBD-15（NFR）。
 - 用量數據來自 **quota-and-usage** 的計量；預警通知共用其通知管道。
 - 遷移中的隔離組重建呼叫 **workspace-isolation** 佈建原語。
-- Self-managed 擴容的成本反映與 **self-managed-operations** 銜接。
+- Self-managed 擴容代操作與 **self-managed-operations** 銜接。
 - 資料搬遷的做法：**data-migration**（TBD-35）。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 驗收標準（Acceptance Criteria）
 - [ ] 申請時公式判定 + 人工覆核路徑可運作，self-managed 最低 tier 2 被強制

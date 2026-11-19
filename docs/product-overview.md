@@ -1,6 +1,6 @@
 # OLAP Platform 產品規劃摘要
 
-> 對象：管理層與 PM ｜ 日期：2026-07-13 ｜ 狀態：規劃中（PRD 細化階段，功能規格草稿 10/10 完成）
+> 對象：管理層與 PM ｜ 更新：2026-11-19 ｜ 狀態：規劃中（PRD 細化階段，各 feature 文件為草稿）
 > 詳細規格見 `internal/prd/README.md` 與 `internal/prd/` 各 feature 文件；本文為決策導向摘要。
 
 ---
@@ -77,19 +77,19 @@
 ## 七、需要管理層/PM 拍板或注意的事項
 
 ### 待拍板（會影響產品走向）
-| # | 事項 | 影響 | 建議時點 |
+| TBD | 事項 | 影響 | 建議時點 |
 |---|------|------|----------|
-| 1 | **計費模式**：chargeback 實收 vs showback 僅報表 vs 免費內部服務（**目前無任何付費機制**） | 影響成本中心綁定的意義、超額處理、代操作成本歸屬 | NFR 定案前（近期） |
-| 2 | **Tier 門檻與儲存/運算解耦**（RFC） | 影響定價與硬體採購規劃 | RFC 討論 |
-| 3 | **超過 tier 3 的大型需求**如何承接 | 是否為此擴 pool、或明確拒收 | 首個大戶出現前 |
-| 4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 #1 一併 |
-| 5 | **Row/column filter**（細粒度權限）做不做在平台側 | Self-managed 使用者要求對指定 table 做 row filtering／column masking；長期方向為以 OPA 外掛實作，待 PoC | RFC 討論 |
-| 6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
-| 7 | **Managed raw 建表是否需平台審核 schema**（curated 已改由 service account 直接建立） | 審核可控品質，但增加平台人力；不審則品質責任在使用者 | PM／管理層決定 |
-| 8 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
-| 9 | **Self-managed 的 DDL 治理形態與資料管理 R&R**（RFC-003 已成文） | 前提已定：DDL 一律平台代建（先緊縮後放寬，dbt 需求出現再議）。待決：治理形態 Option 1/2/3（團隊建議 3：表單宣告制）＋備份甲/乙（暫定甲：不提供、明文免責＋audit log 舉證） | **Manager 決策**，RFC-003 為決策文件 |
-| 10 | **是否開放直接建表**：self-managed 因 dbt 直接 CREATE／DROP、managed curated 由 service account 直接建表 | 過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash；shared cluster 上影響所有租戶。風險與可研究的防護見 `internal/prd/ddl-governance.md` | 開放前 |
-| 11 | **跨 workspace 分享**：owner 可否分享 table 讀取權給其他 workspace | 與原本「不支援」的定位相反，影響隔離設計與對外溝通 | 對外文件前 |
+| TBD-3 | **計費模式**：chargeback 實收 vs showback 僅報表 vs 免費內部服務（**目前無任何付費機制**） | 影響成本中心綁定的意義、超額處理、代操作成本歸屬 | NFR 定案前（近期） |
+| TBD-1 | **Tier 門檻與儲存/運算解耦**（RFC） | 影響定價與硬體採購規劃 | RFC 討論 |
+| TBD-2 | **超過 tier 3 的大型需求**如何承接 | 是否為此擴充硬體，或明確拒收 | 首個大戶出現前 |
+| TBD-4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 TBD-3 一併 |
+| TBD-5 | **Row/column filter**（細粒度權限）做不做在平台側 | Self-managed 使用者要求對指定 table 做 row filtering／column masking；長期方向為以 OPA 外掛實作，待 PoC | RFC 討論 |
+| TBD-6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
+| TBD-7 | **Managed raw 建表是否需平台審核 schema**（curated 已改由 service account 直接建立） | 審核可控品質，但增加平台人力；不審則品質責任在使用者 | PM／管理層決定 |
+| TBD-20 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
+| TBD-8 | **Self-managed 的 DDL 治理形態與資料管理 R&R**（RFC-003 已成文） | 前提已定：DDL 一律平台代建（先緊縮後放寬，dbt 需求出現再議）。待決：治理形態 Option 1/2/3（團隊建議 3：表單宣告制）＋備份甲/乙（暫定甲：不提供、明文免責＋audit log 舉證） | **Manager 決策**，RFC-003 為決策文件 |
+| TBD-29／30 | **是否開放直接建表**：self-managed 因 dbt 直接 CREATE／DROP、managed curated 由 service account 直接建表 | 過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash；shared cluster 上影響所有租戶。風險與可研究的防護見 `internal/prd/ddl-governance.md` | 開放前 |
+| TBD-31 | **跨 workspace 分享**：owner 可否分享 table 讀取權給其他 workspace | 與原本「不支援」的定位相反，影響隔離設計與對外溝通 | 對外文件前 |
 
 ### 需注意的風險
 - **人工申請流程的規模瓶頸**：每週三會議承載量有限，申請量成長時會排隊；已預留自動化路徑，但需要有觸發升級的判斷點。
@@ -98,8 +98,4 @@
 
 ## 八、文件進度與下一步
 
-| 項目 | 狀態 |
-|------|------|
-| PRD 大綱 + 術語 + 範圍 | ✅ 完成 |
-| 功能規格（10 項） | ✅ 10/10 草稿完成（batch pipeline 與帳號權限含待確認假設，需團隊確認後銷案） |
-| 後續階段 | 邊界審查（QA 視角）→ NFR/SLA 量化 → 治理合規 → 利害關係人會簽 → 產出架構文件與對外文件 |
+各文件狀態與完整 TBD 清單見 [00-progress.md](00-progress.md)；決議演進見 [decision-history.md](decision-history.md)。

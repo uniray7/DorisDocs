@@ -1,7 +1,6 @@
-# Feature Spec：Workspace 申請與審核
+# Workspace 申請與審核
 
-> 來源：[PRD](README.md) § 6.1
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 
 ## User Story
 
@@ -12,7 +11,7 @@
 
 ## 前置條件與假設
 
-- **申請流程為純人工，無任何自動化 API**（2026-07-13 決議）：使用者依平台提供的**投影片 template** 填入必要資訊，於**每週三申請會議**向平台團隊報告，審核決議當場或會後給出。
+- **申請流程為純人工，無任何自動化 API**：使用者依平台提供的**投影片 template** 填入必要資訊，於**每週三申請會議**向平台團隊報告，審核決議當場或會後給出。
 - 每個 workspace 必須綁定一個有效的成本中心；申請前由申請者取得成本中心負責人同意（會議中確認）。
 
 ## 申請流程（人工）
@@ -28,7 +27,7 @@
 7. 效能需求三要素：peak QPS（5 分鐘滑動窗口平均）、預期 query performance（目標延遲）、ingestion throughput → 依平台**公式**試算建議規格
 8. Table schema 與 query pattern（managed 附上；作為 raw 初始建表，是否需平台審核 → TBD-7）
 9. 使用情境描述（審核參考）
-10. 資料敏感度聲明（是否含 PII/機敏資料——影響 Phase 6 治理流程）
+10. 資料敏感度聲明（是否含 PII/機敏資料——影響 TBD-6 治理流程）
 11. 預計匯入方式（managed：streaming（三種 CDC format）/ batch，可複選；self-managed 略過此頁）
 
 ### 2. 每週三申請會議（審查按模式分軌）
@@ -65,9 +64,9 @@ Template 章節對應上方欄位，每個申請必附（審核會議即照此�
 
 審核規則（會議中人工檢核，對應原欄位驗證）：
 - ws 名稱符合命名規則（TBD-26）且未被使用；至少選兩個 fab
-- 最大資料量由容量三要素以公式推得，tier 由容量與效能需求共同推算（公式待 Phase 5 定案）
+- 最大資料量由容量三要素以公式推得，tier 由容量與效能需求共同推算（公式待 TBD-15 定案）
 - self-managed：不申報匯入方式（一律自寫）、schema 可免附（不審表）、tier 最低為 2
-- 超過 tier 3 上限（>30TB 或 >500 QPS）：會議中直接轉人工洽談（open issue #4）
+- 超過 tier 3 上限（>30TB 或 >500 QPS）：會議中直接轉人工洽談（TBD-2）
 
 ### 申請狀態機（人工追蹤表欄位）
 > 無自動化系統，狀態由平台團隊在申請追蹤表上人工維護；狀態語義如下，供追蹤表與未來自動化沿用。
@@ -89,7 +88,7 @@ SUBMITTED                               （投影片提交，排入最近的週�
 
 ### Workspace 生命週期狀態機（申請完成後）
 ```
-ACTIVE ⇄ SUSPENDED（違規/閒置，見 quota 與治理規範；**目前無付費機制，不含欠費**，2026-07-14 決議）
+ACTIVE ⇄ SUSPENDED（違規/閒置，見 quota 與治理規範；目前無付費機制，不含欠費）
 ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止，含資料清除）
 ```
 
@@ -99,7 +98,7 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 | ws 名稱不符規則或已被使用 | 規則見 authorization.md（TBD-26），公司內唯一 |
 | 成本中心無效或負責人未同意 | 代碼不存在/已停用，或會議中無法確認成本歸屬 |
 | 規模估算依據不足 | 容量/效能三要素缺項，公式無法推算 tier |
-| 超過 tier 3 上限 | >30TB 或 >500 QPS，轉人工洽談（open issue #4） |
+| 超過 tier 3 上限 | >30TB 或 >500 QPS，轉人工洽談（TBD-2） |
 | self-managed 填了平台匯入方式 | self-managed 一律自寫，不申報 ingestion |
 | Managed 未申報 ws 整體預期 data size | shared/dedicated 判定無依據 |
 | PII 聲明未完成合規會簽 | 銜接 PRD § 9 |
@@ -112,12 +111,10 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 - 佈建動作依賴 **多租戶隔離**（database/resource group 建立）與 **Cluster tier 分配**（tier 判定規則）。
 - Managed 申請時審核的 schema 即 raw zone 初始建表，後續增修表走 **Database/Table 申請流程**（ddl-governance.md）。
 - 交付的 service account 依賴 **帳號模型**（access-control.md）。
-- `ESTIMATE_EXCEEDS_MAX_TIER` 的處理依 open issue #4 決議。
+- `ESTIMATE_EXCEEDS_MAX_TIER` 的處理依 TBD-2 決議。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 驗收標準（Acceptance Criteria）
 - [ ] 投影片 template 完成並涵蓋全部審核所需欄位；週三申請會議節奏建立且有會議紀錄

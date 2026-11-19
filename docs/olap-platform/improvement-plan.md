@@ -103,7 +103,8 @@
 ## 5. Workflow（`/olap-doc-workflow` skill）修改
 
 1. **TBD 機制**：統一格式 `TBD｜待研究：…｜建議負責：PM／工程師`；所有 TBD 同步列到 `00-progress.md` 的 TBD 清單。
-2. **允許帶著 TBD 前進**：Phase 不必全部定案才能進下一階段；Phase 4–10 可不照順序、可由不同人分頭做。
+2. **允許帶著 TBD 前進**：不必全部定案才能進下一階段。
+2a. **12 個 Phase 精簡為 5 個階段**（定義／Feature 細化／NFR 與治理／定案／產出與發布），進度改為按文件追蹤狀態（草稿／評審中／定案）；階段 3–5 可不照順序、分頭進行。
 3. **專有名詞不硬翻**：workspace、tier、managed／self-managed、pipeline、staging、quota、DDL、CCR、workload group、zone（tmp/raw/curated）等直接用英文。
 4. **只寫現況**：正文不標「某日補充」、不留刪除線；決議變更記在 `decision-history.md`。
 5. **單一事實來源**：同一張表或同一個定義只放一處，其他文件用連結。

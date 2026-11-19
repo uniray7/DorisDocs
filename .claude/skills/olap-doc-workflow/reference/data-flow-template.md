@@ -1,6 +1,6 @@
 # Data Flow：<服務名稱>
 
-> 來源：PRD.md（Phase 8 衍生）
+> 來源：`docs/internal/prd/README.md`（階段 5 衍生）
 
 ## 資料流總覽
 ```mermaid

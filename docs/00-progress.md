@@ -6,7 +6,7 @@
 
 | 主題 | 目前結論 |
 |------|----------|
-| 定位 | 公司內部多租戶 OLAP 平台，以 Apache Doris 4.1.4 為基礎、部署在 HashiCorp Nomad；取代付費 Oracle 與 HBase。既有資料約數百 TB，**Oracle／HBase → Doris 的遷移由各團隊自理** |
+| 定位 | 公司內部多租戶 OLAP 平台，以 Apache Doris 4.1.4 為基礎、部署在 HashiCorp Nomad 1.11.1（評估升級 1.11.3，TBD-37）；取代付費 Oracle 與 HBase。既有資料約數百 TB，**Oracle／HBase → Doris 的遷移由各團隊自理** |
 | 使用者 | 後端工程師為主（會寫 SQL），多來自 lakehouse 環境 |
 | 租戶與拓撲 | 租戶單位為 workspace，綁定成本中心。Workspace 至少使用兩個 fab，每個 fab 各自提供相同數量、彼此獨立的 Doris 服務，不跨 fab 部署。Tier 1 為 shared cluster，tier 2 起為 dedicated（[cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md)） |
 | 服務模式 | Managed（平台承擔資料管理責任，寫入只走平台 pipeline）與 self-managed（使用者自建 pipeline、自負資料責任，限 dedicated）；申請時選定、不可轉換。對照表見 [PRD](internal/prd/README.md) |
@@ -26,7 +26,7 @@
 | [prd/README.md](internal/prd/README.md) | 1 定義 | 草稿 | 1、2、3、6、20 |
 | [workspace-application.md](internal/prd/workspace-application.md) | 2 Feature 細化 | 草稿 | 7、26、34 |
 | [staging-validation.md](internal/prd/staging-validation.md) | 2 Feature 細化 | 草稿 | 15 |
-| [cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md) | 2 Feature 細化 | 草稿 | 1、2、4、21 |
+| [cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md) | 2 Feature 細化 | 草稿 | 1、2、4、21、37 |
 | [workspace-isolation.md](internal/prd/workspace-isolation.md) | 2 Feature 細化 | 草稿 | 18、31 |
 | [authorization.md](internal/prd/authorization.md) | 2 Feature 細化 | 評審中 | 21–27、31 |
 | [access-control.md](internal/prd/access-control.md) | 2 Feature 細化 | 草稿（待再討論） | 10、11、16、22、24、30 |
@@ -87,6 +87,7 @@
 | TBD-34 | Web Console Admin 後台涵蓋哪些開通動作 | 工程師（Tool Team）＋PM | 無 | web-console | 未開始 |
 | TBD-35 | 資料搬遷做法、流程、回退；換服務模式時由誰搬 | 工程師＋PM | 無 | data-migration | 未開始 |
 | TBD-36 | DR：backup／restore 到 S3 或 MinIO 的範圍、頻率、保留期、還原流程與演練 | 工程師＋PM | 無 | ha-dr | 未開始 |
+| TBD-37 | Nomad 由 1.11.1 升級到 1.11.3（sticky 相關 bug）：以 L2 release notes 確認是否已修正、評估升級影響 | 工程師 | 無 | cluster-topology-and-tiering | 研究中 |
 
 ## 試點回饋（階段 5）
 

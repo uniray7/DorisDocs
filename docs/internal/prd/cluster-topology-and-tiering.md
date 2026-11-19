@@ -12,7 +12,7 @@
 
 ## Fab 與 cluster 拓撲
 
-- 全平台：十幾座 fab，各有多座 cluster，整體預計 20–40 座；Doris 4.1.4 部署在 HashiCorp Nomad 上。
+- 全平台：十幾座 fab，各有多座 cluster，整體預計 20–40 座；Doris 4.1.4 部署在 HashiCorp Nomad **1.11.1** 上（因 sticky 相關 bug，評估升級到 1.11.3：TBD-37）。
 - Workspace 申請時指定要在哪些 fab 使用服務（**至少兩個**）。平台在每個 fab 各自提供**相同數量、彼此獨立**的 Doris 服務，**不跨 fab 部署**；fab 之間不互為備援（HA 見 [ha-dr.md](ha-dr.md)）。
 - 各 fab 各自指定 shared 或 dedicated cluster。
 - 同一 workspace 在同一 fab 能否使用多座 cluster（目前傾向一座）→ TBD-21。

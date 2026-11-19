@@ -8,7 +8,7 @@
 | 主題 | 決議 | 取代了什麼（原因） | 狀態 | 決策者 |
 |------|------|-------------------|------|--------|
 | Doris 版本 | 4.1.4 | 4.1.0（v0.12 為較新資料） | 有效 | uniray7 |
-| 部署與組織 | Doris 跑在 HashiCorp Nomad；Tool Team（隸屬資料平台團隊）負責 Web Console 與授權後端 | 「私有雲、硬體池浮動」的描述（不符現況） | 有效 | uniray7 |
+| 部署與組織 | Doris 跑在 HashiCorp Nomad（目前 1.11.1，因 sticky 相關 bug 評估升級 1.11.3，TBD-37）；Tool Team（隸屬資料平台團隊）負責 Web Console 與授權後端 | 「私有雲、硬體池浮動」的描述（不符現況） | 有效 | uniray7 |
 | Fab 維度 | Workspace 申請時指定要在哪些 fab 使用服務（至少兩個）；每個 fab 各自提供相同數量、彼此獨立的 Doris 服務，不跨 fab 部署；與 HA 無關 | — （新增維度） | 有效 | uniray7 |
 | Workspace 命名 | 允許英數字之間的單底線（例 `domain_product`），`__` 保留為分隔符 | 07-13：ws 名稱只允許小寫字母＋數字 | 有效（細節 TBD-26） | uniray7 |
 | Zone | tmp zone 取消，managed 只剩 raw／curated | 07-13：tmp／raw／curated 三層 | 有效（ingestion 流程待改寫 TBD-28） | uniray7 |

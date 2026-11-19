@@ -1,6 +1,6 @@
 # Feature Spec：Staging 驗證
 
-> 來源：[PRD.md](../PRD.md) § 6.2
+> 來源：[PRD](README.md) § 6.2
 > 狀態：草稿（Phase 3）
 > 對應申請狀態機區段：`STAGING_PROVISIONED → STAGING_TESTING → TEST_REPORT_REVIEW`（見 [workspace-application.md](workspace-application.md)）
 

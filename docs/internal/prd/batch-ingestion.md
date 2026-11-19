@@ -1,6 +1,6 @@
 # Feature Spec：Batch Ingestion Pipeline（僅 Managed）
 
-> 來源：[PRD.md](../PRD.md) § 6.6
+> 來源：[PRD](README.md) § 6.6
 > 狀態：草稿（Phase 3）
 > ⚠️ **本篇多處為平台預設草案**：batch 的脈絡傾倒尚未進行，以下設計按常見做法起草，標 ⚠️ 處皆待團隊確認（見文末「待確認假設清單」）。
 
@@ -107,7 +107,7 @@ curated zone（免審）
 | 409 | `RUN_ALREADY_IN_PROGRESS` | 前一批尚未完成時手動觸發（不允許併發 run） |
 
 ## 與其他功能的依賴關係
-- 目標 raw table 需先經 **database-table-application** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
+- 目標 raw table 需先經 **ddl-governance** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
 - Landing/corrupted data 路徑、tmp table 的 per-ws 隔離依 **workspace-isolation**；寫入側治理參數依 **RFC-002**。
 - 指標與配額計入 **quota-and-usage**；tmp/processed 清理政策 Phase 5/6 定案。
 - Staging 版 batch job 行為一致（**staging-validation** 可測此流程）。

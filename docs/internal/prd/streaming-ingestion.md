@@ -1,6 +1,6 @@
 # Feature Spec：Streaming Ingestion Pipeline（僅 Managed）
 
-> 來源：[PRD.md](../PRD.md) § 6.5
+> 來源：[PRD](README.md) § 6.5
 > 狀態：草稿（Phase 3）
 
 ## 概念模型
@@ -92,7 +92,7 @@ curated zone（免審）
 | 409 | `PIPELINE_LIMIT_REACHED` | 超過 ws 的 pipeline 數量上限（上限值 Phase 5） |
 
 ## 與其他功能的依賴關係
-- 目標 raw table 需先經 **database-table-application** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
+- 目標 raw table 需先經 **ddl-governance** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
 - Topic/憑證/corrupted data 路徑的 per-ws 隔離依 **workspace-isolation**。
 - 指標與配額計入 **quota-and-usage**；tmp 清理政策屬 managed 資料管理責任（Phase 5/6 定案）。
 - Staging 版 pipeline 行為一致（**staging-validation** 的 ingestion 接通驗證即測此流程）。

@@ -1,6 +1,6 @@
 # PRD：OLAP Platform（以 Apache Doris 為基礎的內部 OLAP 服務）
 
-> 來源脈絡：[00-progress.md](../00-progress.md) Phase 1 脈絡摘要
+> 來源脈絡：[00-progress.md](../../00-progress.md) Phase 1 脈絡摘要
 > 狀態：大綱版（Phase 2），各章節細節將於後續 Phase 補齊
 
 ## 1. 背景與問題陳述
@@ -61,18 +61,18 @@
 - **Lakehouse → Doris 灌資料通道**：作為正式 ingestion 路徑（非僅 staging 測試用）。batch pipeline 的來源介面應預留擴充空間；staging 的 lakehouse 匯入機制可視為前身。
 
 ## 6. 核心功能大綱
-> Phase 3 逐項展開成 `feature-specs/<slug>.md`，此處放連結。
+> Phase 3 逐項展開成 `<feature>.md`，此處放連結。
 
-1. **Workspace 申請與審核**（feature-specs/workspace-application.md）——**純人工流程**：使用者依投影片 template 填入需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），於每週三申請會議報告，平台以公式推算 tier 並審核；無自動化 API（留作 roadmap）。
-2. **Staging 驗證**（feature-specs/staging-validation.md）——申請核准後租借固定小規格的 staging 試用環境、灌測試資料（假資料或自 lakehouse 匯入）、提交設計合理性報告（效能數據僅供參考），通過才開通正式環境。
-3. **多租戶隔離**（feature-specs/workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
-4. **Cluster tier 分配與升級**（feature-specs/cluster-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
-5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（feature-specs/streaming-ingestion.md）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）統一落 tmp zone（immutable），使用者以 SQL parse/merge 進 raw；format 驗證失敗落 MinIO corrupted data 路徑並告警。
-6. **Batch ingestion pipeline（僅 managed）**（feature-specs/batch-ingestion.md）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
-7. **Database/Table 申請流程（僅 managed）**（feature-specs/database-table-application.md）——ws 成員提交 DDL 申請 → 依治理方案核准（**方案 A**：ws owner approve；**方案 B**：平台審核，raw 嚴審/curated 免審——**待 PM/管理層決定**）→ 平台系統自動執行（zone 命名由系統保證）。與 workspace 申請是兩條獨立流程。
-8. **Self-managed 營運支援**（feature-specs/self-managed-operations.md）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
-9. **配額與用量可視化**（feature-specs/quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
-10. **帳號與存取控制**（feature-specs/access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異：managed 無直接 load/DDL 權限）；查詢協定（MySQL protocol 完整 SQL + Arrow Flight 僅 SELECT）；row/column filter 是否納入依 RFC 決議。
+1. **Workspace 申請與審核**（workspace-application.md）——**純人工流程**：使用者依投影片 template 填入需求（服務模式、資料量/成長量/retention、QPS 與效能預期、schema 與 query pattern、成本歸屬），於每週三申請會議報告，平台以公式推算 tier 並審核；無自動化 API（留作 roadmap）。
+2. **Staging 驗證**（staging-validation.md）——申請核准後租借固定小規格的 staging 試用環境、灌測試資料（假資料或自 lakehouse 匯入）、提交設計合理性報告（效能數據僅供參考），通過才開通正式環境。
+3. **多租戶隔離**（workspace-isolation.md）——資料、metadata、運算資源（resource group）三層隔離的行為定義。
+4. **Cluster tier 分配與升級**（cluster-topology-and-tiering.md）——shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
+5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（streaming-ingestion.md）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）統一落 tmp zone（immutable），使用者以 SQL parse/merge 進 raw；format 驗證失敗落 MinIO corrupted data 路徑並告警。
+6. **Batch ingestion pipeline（僅 managed）**（batch-ingestion.md）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
+7. **Database/Table 申請流程（僅 managed）**（ddl-governance.md）——ws 成員提交 DDL 申請 → 依治理方案核准（**方案 A**：ws owner approve；**方案 B**：平台審核，raw 嚴審/curated 免審——**待 PM/管理層決定**）→ 平台系統自動執行（zone 命名由系統保證）。與 workspace 申請是兩條獨立流程。
+8. **Self-managed 營運支援**（self-managed-operations.md）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
+9. **配額與用量可視化**（quota-and-usage.md）——使用者查看自己的配額、用量、查詢效能。
+10. **帳號與存取控制**（access-control.md）——workspace 內的帳號/權限模型（兩種模式的權限差異：managed 無直接 load/DDL 權限）；查詢協定（MySQL protocol 完整 SQL + Arrow Flight 僅 SELECT）；row/column filter 是否納入依 RFC 決議。
 
 ## 7. 多租戶與資源隔離模型
 > 要填：workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Tier 草案（門檻待 RFC 修正）：
@@ -119,9 +119,9 @@
 | 8 | **Self-managed 的 DDL 治理形態與資料管理 R&R** | **待 manager 決策（RFC-003）** | 前提已定（07-17 改訂）：**DDL（database＋table，含 ALTER/DROP）一律平台代建**——初期緊縮政策（事前攔截＋保護性注入）；dbt/高頻建表需求正式提出時啟動放寬預案（RFC-003 §9，雙軌制與全自建＋規範文件兩形態已完整分析備存）。選項：1 固定三庫 / 2 強制 zone 命名 / 3 表單宣告制（團隊建議）；子決策：備份/還原暫定不提供（audit log 舉證）。R&R 三案相同，差異在語義承載方式 |
 
 ## 12. 衍生文件索引（Phase 8 完成後補上）
-- System Architecture：`system-architecture.md`
-- Data Flow：`data-flow.md`
-- RFC：`rfc/`
-- 對外文件：`../external/`
+- System Architecture：`../architecture/system-architecture.md`
+- Data Flow：`../architecture/data-flow.md`
+- RFC：`../rfc/`
+- 對外文件：`../../external/`
 
 > 對外文件結構要求（2026-07-13）：按服務模式分別闡明——managed 須完整涵蓋**使用規範、使用限制、責任歸屬**三者；self-managed 重點為**責任歸屬**（規範/限制僅保護性 config 與告警門檻）。`limits-and-quotas.md` 與 `service-spec.md` 以「模式 × 規範/限制/責任」矩陣呈現。

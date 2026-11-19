@@ -1,7 +1,7 @@
 # OLAP Platform 產品規劃摘要
 
 > 對象：管理層與 PM ｜ 日期：2026-07-13 ｜ 狀態：規劃中（PRD 細化階段，功能規格草稿 10/10 完成）
-> 詳細規格見 `internal/PRD.md` 與 `internal/feature-specs/`；本文為決策導向摘要。
+> 詳細規格見 `internal/prd/README.md` 與 `internal/prd/` 各 feature 文件；本文為決策導向摘要。
 
 ---
 

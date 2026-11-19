@@ -1,11 +1,11 @@
 # Feature Spec：配額與用量可視化
 
-> 來源：[PRD.md](../PRD.md) § 6.9
+> 來源：[PRD](README.md) § 6.9
 > 狀態：草稿（Phase 3）
 
 ## 定位
 
-讓使用者**自己看得到**配額、用量與查詢表現，把「超標了嗎」「還剩多少」「為什麼變慢」的高頻提問從人工支援轉為自助查詢；同時是 tier 超標偵測（cluster-tiering 的 80% 早期預警）與計費（模式待定）的資料基礎。
+讓使用者**自己看得到**配額、用量與查詢表現，把「超標了嗎」「還剩多少」「為什麼變慢」的高頻提問從人工支援轉為自助查詢；同時是 tier 超標偵測（cluster-topology-and-tiering 的 80% 早期預警）與計費（模式待定）的資料基礎。
 
 ## 計量定義（已定案，本 spec 落實為指標）
 
@@ -22,7 +22,7 @@
 - 儲存：配額、目前占用（壓縮後）、占比、**80% 早期預警狀態**、按 zone/database 分解（managed）。
 - QPS：tier 上限、目前 5 分鐘滑動平均、近 7/30 天峰值曲線。
 - Ingestion：各 pipeline/job 吞吐、tmp 與 corrupted data 占用明細。
-- 超標紀錄：何時超、超多少、平台採取的動作（限流/通知，依 cluster-tiering 政策）。
+- 超標紀錄：何時超、超多少、平台採取的動作（限流/通知，依 cluster-topology-and-tiering 政策）。
 
 ### 查詢表現頁
 - 查詢延遲分布（P50/P95/P99）、慢查詢清單（**僅本 ws**——metadata 隔離約束，不得洩漏他租戶查詢）。
@@ -33,14 +33,14 @@
 
 ### Self-managed 的差異
 - Self-managed 看 **cluster 級**視圖（節點資源、磁碟水位——即開通交付的 monitor），無 zone/pipeline 分解（無平台 pipeline）、無 DDL 治理視圖。
-- QPS/儲存是否對 self-managed 也做 tier 計量展示 ⚠️ 待確認（超標升級政策是否適用 self-managed，關聯 cluster-tiering）。
+- QPS/儲存是否對 self-managed 也做 tier 計量展示 ⚠️ 待確認（超標升級政策是否適用 self-managed，關聯 cluster-topology-and-tiering）。
 
 ## 行為規格
 
 | # | 情境 | 行為 |
 |---|------|------|
-| 1 | 儲存占用達配額 80% | 儀表板標示 + 強制告警送聯絡人（cluster-tiering 早期預警） |
-| 2 | 儲存達 100% | 依 cluster-tiering 超標政策（限流/擋寫入 ⚠️ 政策細節與「不願升級」處理待拍板 #4）；儀表板顯著標示 |
+| 1 | 儲存占用達配額 80% | 儀表板標示 + 強制告警送聯絡人（cluster-topology-and-tiering 早期預警） |
+| 2 | 儲存達 100% | 依 cluster-topology-and-tiering 超標政策（限流/擋寫入 ⚠️ 政策細節與「不願升級」處理待拍板 #4）；儀表板顯著標示 |
 | 3 | QPS 滑動平均超 tier 上限 | 記錄超標事件 + 通知；gateway 限流行為依 RFC-002 |
 | 4 | 查詢被 kill policy 終止 | 事件進「被 kill 查詢清單」，含觸發規則與建議（如：補分區條件） |
 | 5 | 使用者查他人用量 | 不可能：所有視圖以 ws 為邊界（workspace-isolation） |
@@ -62,7 +62,7 @@
 | PUT | `/api/v1/workspaces/{ws}/alerts` | 自訂告警門檻設定 |
 
 ## 與其他功能的依賴關係
-- 80% 預警與超標處理政策：**cluster-tiering**。
+- 80% 預警與超標處理政策：**cluster-topology-and-tiering**。
 - QPS 計量來源與 kill 事件：**RFC-002**（gateway、workload schedule policy）。
 - tmp/corrupted/landing 占用明細：**streaming/batch-ingestion**。
 - 視圖的 ws 邊界：**workspace-isolation**（metadata 隔離延伸到監控資料）。

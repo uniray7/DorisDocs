@@ -3,7 +3,7 @@
 - 狀態：草稿
 - 作者：平台團隊
 - 日期：2026-07-13
-- 相關 PRD：`internal/PRD.md § 7`、`feature-specs/workspace-isolation.md § 運算資源隔離`
+- 相關 PRD：`internal/prd/README.md § 7`、`internal/prd/workspace-isolation.md § 運算資源隔離`
 - 環境前提：Apache Doris **4.1.0**
 
 ## 背景

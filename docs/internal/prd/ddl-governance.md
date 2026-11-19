@@ -1,6 +1,6 @@
 # Feature Spec：Database/Table 申請流程（僅 Managed）
 
-> 來源：[PRD.md](../PRD.md) § 6.7
+> 來源：[PRD](README.md) § 6.7
 > 狀態：草稿（Phase 3）
 > ⚠️ **治理模式兩案並列，待 PM/管理層決定**（PRD open issue #7）。本 spec 將兩案的差異集中在「核准段」，提交段與執行段兩案完全相同——定案後只需刪除落選案。
 
@@ -53,7 +53,7 @@ ws 成員在 web console 提交申請，內容：
 | 3 | 對 tmp zone 提出 DDL 申請 | 拒絕：tmp 由平台管理 |
 | 4 | 建 curated table | 免審即執行；計入儲存配額 |
 | 5 | delete table（raw/curated） | 需 owner approve（方案 B 另加平台確認）；執行前快照 schema、依保留政策處理資料 ⚠️（立即清除 vs 軟刪除冷靜期，Phase 5/6 定） |
-| 6 | 申請時 ws 儲存配額不足以容納預估量 | 提交擋下，引導走 tier 升級流程（cluster-tiering） |
+| 6 | 申請時 ws 儲存配額不足以容納預估量 | 提交擋下，引導走 tier 升級流程（cluster-topology-and-tiering） |
 | 7 | 被 pipeline merge SQL 引用中的 raw table 遭 delete 申請 | 系統警示引用中的 pipeline/job，需先解除引用才可核准 |
 | 8 | DDL 執行失敗（Doris 端錯誤） | 申請標 FAILED + 通知；平台介入處理（managed 責任），不留半完成狀態 |
 

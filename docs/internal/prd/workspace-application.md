@@ -1,6 +1,6 @@
 # Feature Spec：Workspace 申請與審核
 
-> 來源：[PRD.md](../PRD.md) § 6.1
+> 來源：[PRD](README.md) § 6.1
 > 狀態：草稿（Phase 3）
 
 ## User Story
@@ -109,7 +109,7 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 ## 與其他功能的依賴關係
 - 正式佈建前依賴 **Staging 驗證**（staging-validation.md）的測試報告通過。
 - 佈建動作依賴 **多租戶隔離**（database/resource group 建立）與 **Cluster tier 分配**（tier 判定規則）。
-- Managed 申請時審核的 schema 即 raw zone 初始建表，後續增修表走 **Database/Table 申請流程**（database-table-application.md）。
+- Managed 申請時審核的 schema 即 raw zone 初始建表，後續增修表走 **Database/Table 申請流程**（ddl-governance.md）。
 - 交付的初始帳號依賴 **帳號與存取控制** 的帳號模型。
 - `ESTIMATE_EXCEEDS_MAX_TIER` 的處理依 open issue #4 決議。
 

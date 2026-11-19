@@ -1,6 +1,6 @@
 # Feature Spec：帳號與存取控制
 
-> 來源：[PRD.md](../PRD.md) § 6.10
+> 來源：[PRD](README.md) § 6.10
 > 狀態：草稿（Phase 3）
 > ⚠️ 帳號體系的公司內整合（SSO/LDAP）脈絡未傾倒，標 ⚠️ 處待確認。
 
@@ -95,7 +95,7 @@
 
 ## 與其他功能的依賴關係
 - ws 間隔離邊界與 GRANT 實作：**workspace-isolation**（本 spec 是其「帳號模型細節」的展開）。
-- DDL 核准權限：**database-table-application**（方案 A 的 owner approve 即本 spec 的 Owner 角色）。
+- DDL 核准權限：**ddl-governance**（方案 A 的 owner approve 即本 spec 的 Owner 角色）。
 - Producer/上傳憑證：**streaming/batch-ingestion**。
 - MySQL protocol 連線一律經 gateway：**RFC-002**（連線數控管、QPS 計量以帳號歸屬 ws）；Arrow Flight 的路徑與計量待 RFC-002 驗證。
 - Row/column filter：RFC 決議（待拍板 #5）。

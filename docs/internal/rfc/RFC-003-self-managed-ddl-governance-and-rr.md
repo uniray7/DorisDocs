@@ -3,7 +3,7 @@
 - 狀態：草稿（**待 manager 決策**）
 - 作者：平台團隊
 - 日期：2026-07-16（**2026-07-17 修訂**：table DDL 政策改為一律平台代建，原雙軌制降為放寬預案 §9）
-- 相關：`internal/PRD.md § 6.8`、`feature-specs/self-managed-operations.md`、open issue #3（row/column filter）
+- 相關：`internal/prd/README.md § 6.8`、`internal/prd/self-managed-operations.md`、open issue #3（row/column filter）
 - 環境前提：Apache Doris 4.1.0；self-managed HA 為雙 cluster + CCR cluster 級全同步（已決議）
 
 ---
@@ -206,10 +206,10 @@ Self-managed 使用者的既有需求是「自己灌資料 + 任意開 database/
 
 ## 10. 對既有文件/決議的衝擊（定案後回填）
 
-- `feature-specs/self-managed-operations.md`：責任矩陣併入 §6；橫幅前提改為全代建；行為規格「使用者新建 database/table」改為經代建流程。
-- `PRD.md`：self-managed 術語定義（「可自行執行 DDL」→「DDL 一律平台代建，初期緊縮」）；§6.8；open issue #8。
-- `feature-specs/workspace-application.md`：佈建交付項增加 DDL 提交管道與指南說明。
-- `feature-specs/access-control.md`：self-managed 帳號**不授予任何 DDL 權限**；「cluster 內帳號/權限自理」前提與 GRANT 權衝突需依 §8 隱患 3 決議增修；row/column filter 的政策漂移問題因 DDL 經手平台而可在代建驗證時攔截提醒。
+- `internal/prd/self-managed-operations.md`：責任矩陣併入 §6；橫幅前提改為全代建；行為規格「使用者新建 database/table」改為經代建流程。
+- `internal/prd/README.md`：self-managed 術語定義（「可自行執行 DDL」→「DDL 一律平台代建，初期緊縮」）；§6.8；open issue #8。
+- `internal/prd/workspace-application.md`：佈建交付項增加 DDL 提交管道與指南說明。
+- `internal/prd/access-control.md`：self-managed 帳號**不授予任何 DDL 權限**；「cluster 內帳號/權限自理」前提與 GRANT 權衝突需依 §8 隱患 3 決議增修；row/column filter 的政策漂移問題因 DDL 經手平台而可在代建驗證時攔截提醒。
 - `product-overview.md`：模式對照表「建表/改表：完全自由」改寫；待拍板清單補 RFC-003。
 - `00-progress.md`：使用者需求清單第 2 條的決議狀態。
 - **對外使用規範（Phase 8）**：DDL 申請流程與執行時效預期；「目前不支援 dbt 直連建表，需求請提出」明示；緊急介入權條款；穩定性承諾四層措辭（弄不沉/會叫/會救/有證據，不保證不變慢）；**觸頂行為預先說明**（-235 拒寫、磁碟停寫波及同 BE 正常表——屬防線正常運作）；巡檢 best-effort 免責。

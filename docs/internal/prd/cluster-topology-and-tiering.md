@@ -1,6 +1,6 @@
 # Feature Spec：Cluster Tier 分配與升級
 
-> 來源：[PRD.md](../PRD.md) § 6.4
+> 來源：[PRD](README.md) § 6.4
 > 狀態：草稿（Phase 3）
 > 職責邊界：本 spec 管「一個 ws 該落在哪種 cluster/規格、如何變更」；tier 內限制的**執行**（超額拒絕/降級/通知）屬 quota-and-usage。
 

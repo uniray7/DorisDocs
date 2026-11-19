@@ -1,6 +1,6 @@
 # Feature Spec：Self-managed 營運支援
 
-> 來源：[PRD.md](../PRD.md) § 6.8
+> 來源：[PRD](README.md) § 6.8
 > 狀態：草稿（Phase 3）
 
 ## 定位
@@ -83,7 +83,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 | 備份/還原 | ❌ 不提供（RFC-003 子決策暫定甲：誤刪/誤操作一律不救援、明文免責；平台保存 DDL 申請紀錄 + Doris audit log〔規劃 ELK〕作舉證） | ✅ 自行負責 |
 | 查詢效能調校 | | ✅（優化協助可提 PM request，不保證承接） |
 | 帳號/權限管理（cluster 內） | | ✅ ⚠️（與「使用者帳號不授予 DDL 權限」的技術強制有衝突——擁有 GRANT 權即可自行開回 DDL；解法見 RFC-003 §8 隱患 3，傾向初始帳號不含 GRANT_PRIV、帳號管理收回平台） |
-| 配額與用量申報 | | ✅（超標處理見 cluster-tiering） |
+| 配額與用量申報 | | ✅（超標處理見 cluster-topology-and-tiering） |
 
 ## 行為規格
 
@@ -102,7 +102,7 @@ Self-managed 模式的平台支援**刻意限縮**為四件事：**日常 infra 
 
 ## 與其他功能的依賴關係
 - 開通交付內容與 WAITING_FOR_CAPACITY 狀態依 **workspace-application**。
-- Tier 變更（scale 到跨 tier 規格）依 **cluster-tiering** 的門檻與流程。
+- Tier 變更（scale 到跨 tier 規格）依 **cluster-topology-and-tiering** 的門檻與流程。
 - 系統層指標同時進平台側容量管理（**quota-and-usage** 的平台視角）。
 - 目前無付費機制；若未來引入計費（product-overview 待拍板 #1），代操作與 PM request 承接的成本歸屬屆時再定。
 

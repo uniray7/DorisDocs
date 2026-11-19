@@ -1,6 +1,6 @@
 # Feature Spec：多租戶隔離（Workspace Isolation）
 
-> 來源：[PRD.md](../PRD.md) § 6.3
+> 來源：[PRD](README.md) § 6.3
 > 狀態：草稿（Phase 3）
 
 ## User Story
@@ -70,9 +70,9 @@
 
 ## 與其他功能的依賴關係
 - 佈建原語被 **workspace-application**（正式與 staging 佈建）呼叫。
-- Workload group 參數由 **cluster-tiering** 的 tier 規格決定。
+- Workload group 參數由 **cluster-topology-and-tiering** 的 tier 規格決定。
 - 帳號模型細節（人員帳號 vs 服務帳號、權限矩陣）在 **access-control** 展開；本 spec 只定隔離邊界。
-- Managed 寫入路徑限制與 **streaming/batch-ingestion**、**database-table-application** 銜接（僅平台 pipeline 帳號可寫 raw；使用者 ELT 只可寫 curated）。
+- Managed 寫入路徑限制與 **streaming/batch-ingestion**、**ddl-governance** 銜接（僅平台 pipeline 帳號可寫 raw；使用者 ELT 只可寫 curated）。
 
 ## 邊界審查（Phase 4 補上）
 | Edge Case | 是否適用 | 處理方式 |

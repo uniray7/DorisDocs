@@ -117,7 +117,7 @@
 
 | 步驟 | 內容 | 為什麼放這裡 |
 |------|------|-------------|
-| 0 | **討論文件架構與要涵蓋的 topic**：讀者分層、目錄組織、topic 清單、每個 topic 對應的主文件 | 後續每一步都依賴「哪個 topic 放哪份文件」 |
+| 0 | **討論文件架構與要涵蓋的 topic**：讀者分層、目錄組織、topic 清單、每個 topic 對應的主文件（✅ 已定案，見 §8） | 後續每一步都依賴「哪個 topic 放哪份文件」 |
 | 1 | Workflow：SKILL.md、模板、README（加 PM 交接入口） | 依步驟 0 的架構寫規範 |
 | 2 | 合併 Authorization PRD v0.12：§7 的 A1–A13 逐項確認後併入對應文件 | 會推翻部分舊決議，要在精簡前做，避免同一份文件改兩次 |
 | 3 | 刪英文版；新增 `decision-history.md`；精簡 `00-progress.md`；建立統一 TBD 清單 | 合併後被推翻的舊決議一起移入 decision-history |
@@ -160,6 +160,84 @@
 
 ### 7.3 合併方式（建議）
 
-- v0.12 轉成 markdown，新增為 `internal/authorization-prd.md`，保留原版號與評審狀態。
+- v0.12 轉成 markdown，新增為 `internal/prd/authorization.md`，保留原版號與評審狀態。
 - `access-control.md` 與 v0.12 重疊最多：授權相關內容以 v0.12 為準，`access-control.md` 精簡後改連結過去。
 - A1–A13 依確認結果同步修正其他文件；被推翻的舊決議記到 `decision-history.md`。
+
+---
+
+## 8. 目標文件架構（步驟 0 結論，2026-11-19）
+
+### 8.1 目錄結構
+
+拿掉 `olap-platform` 這一層，repo 只放這個平台的文件。
+
+```
+README.md                         交接入口：讀者導覽（不放內容）
+docs/
+  00-progress.md                  現況摘要 + 統一 TBD 清單 + Phase 狀態
+  decision-history.md             決議演進（新增）
+  product-overview.md             管理層一頁版
+  improvement-plan.md             本次整理計畫（完成後可刪）
+  internal/
+    prd/                          各 feature 的細節
+      README.md                   ← 原 PRD.md：範圍、術語、模式對照表、feature 索引
+      workspace-application.md
+      staging-validation.md
+      cluster-topology-and-tiering.md   ← 原 cluster-tiering，加入 fab／cluster 拓撲
+      workspace-isolation.md
+      authorization.md            ← Authorization PRD v0.12
+      access-control.md           ← 精簡：只留查詢協定，授權改連結 authorization.md
+      ddl-governance.md           ← 原 database-table-application，涵蓋兩種模式的 DDL
+      streaming-ingestion.md
+      batch-ingestion.md
+      quota-and-usage.md
+      self-managed-operations.md
+      ha-dr.md                    ← 新增骨架
+      monitoring-alerting.md      ← 新增骨架
+      web-console.md              ← 新增骨架（Tool Team 的 Console 總覽）
+    rfc/
+      RFC-002-shared-cluster-resource-isolation.md
+      RFC-003-self-managed-ddl-governance-and-rr.md
+      RFC-003-decision-brief.md
+    architecture/                 Phase 8
+      system-architecture.md
+      data-flow.md                ← managed-service-journey.md 併入
+  external/                       Phase 8（對外文件）
+```
+
+### 8.2 讀者路徑
+
+| 讀者 | 起點 | 接著讀 |
+|------|------|--------|
+| 管理層 | `docs/product-overview.md` | `internal/rfc/` 的決策簡報 |
+| PM | `README.md` | `docs/00-progress.md`（現況＋TBD）→ `internal/prd/README.md` |
+| 工程師 | `internal/prd/README.md` | 各 feature 文件 → `internal/rfc/` → `internal/architecture/` |
+| 對外使用者 | `docs/external/` | — |
+
+### 8.3 Topic → 主文件
+
+| Topic | 主文件 | 狀態 |
+|-------|--------|------|
+| 產品定位、範圍、術語、模式對照 | `prd/README.md` | 現有（收斂重複表格） |
+| Fab／cluster 拓撲、tier | `prd/cluster-topology-and-tiering.md` | 改名＋擴充 |
+| 申請與開通 | `prd/workspace-application.md` | 現有 |
+| Staging | `prd/staging-validation.md` | 現有 |
+| 隔離 | `prd/workspace-isolation.md` | 現有 |
+| 授權與帳號 | `prd/authorization.md` | 新增（v0.12） |
+| 查詢協定 | `prd/access-control.md` | 精簡 |
+| DDL 治理（兩種模式） | `prd/ddl-governance.md` | 改名＋整合 |
+| 資料寫入 | `prd/streaming-ingestion.md`、`prd/batch-ingestion.md` | 現有 |
+| 配額與用量 | `prd/quota-and-usage.md` | 現有 |
+| HA／DR | `prd/ha-dr.md` | 新增骨架 |
+| 監控告警 | `prd/monitoring-alerting.md` | 新增骨架 |
+| Web Console | `prd/web-console.md` | 新增骨架 |
+| Self-managed 營運支援 | `prd/self-managed-operations.md` | 現有 |
+| 治理合規／PII | `prd/README.md` 治理章節 | TBD（Phase 6） |
+| 系統架構、data flow | `architecture/` | TBD（Phase 8） |
+| 對外文件 | `external/` | TBD（Phase 8） |
+
+### 8.4 連帶影響
+
+- 步驟 1 的 workflow skill 路徑規範由 `docs/<slug>/…` 改為本結構。
+- 搬移與改名在步驟 3 執行（`git mv`，保留檔案歷史），同時更新所有內部連結。

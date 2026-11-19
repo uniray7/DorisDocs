@@ -1,101 +1,88 @@
-# Feature Spec：Database/Table 申請流程（僅 Managed）
+# DDL 治理
 
-> 來源：[PRD](README.md) § 6.7
-> 狀態：草稿（Phase 3）
-> ⚠️ **治理模式兩案並列，待 PM/管理層決定**（PRD open issue #7）。本 spec 將兩案的差異集中在「核准段」，提交段與執行段兩案完全相同——定案後只需刪除落選案。
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿｜涵蓋 managed 與 self-managed
 
-## 定位
+## 總覽
 
-- Managed workspace 開通後，database/table 的 **create / alter / delete** 一律走本流程：使用者**沒有直接 DDL 權限**，核准後由**平台系統自動執行**（zone 命名與 Doris 命名規則由系統保證）。
-- 與 workspace 申請是**兩條獨立流程**：workspace 申請純人工（投影片+週三會議）；本流程為**線上自助**（web console），因為它是日常高頻操作，人工會議承載不了。
-- Self-managed 不適用：自行下 DDL、平台不負責任。
+| 物件 | Managed | Self-managed |
+|------|---------|--------------|
+| Database | 平台建立（owner 透過平台申請） | 平台建立；命名方式 → TBD-8 |
+| Table | **raw**：平台建表、改表、刪表、清空；建表前是否審核 schema → TBD-7<br>**curated**：service account 直接 CREATE／DROP／TRUNCATE（是否安全 → TBD-30）；ALTER → TBD-22 | 一律提交平台代建（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 前提）；是否因 dbt 開放直接 DDL → TBD-29 |
 
-## 各 zone 的治理強度
+- DDL 申請的提交管道（人工或 Console）與執行時效 → TBD-32。
+- 所有經平台執行的 DDL 都留稽核紀錄：誰申請、誰核准、何時執行、DDL 全文；ALTER／DROP 執行前記錄變更前 schema。
 
-| Zone | create/alter/delete | 說明 |
-|------|--------------------|------|
-| tmp | **不開放申請**——由平台隨 pipeline/job 建立與管理 | 使用者無 tmp DDL 入口 |
-| raw | 走本流程（核准段依方案 A/B） | pipeline merge SQL 只能寫入經本流程核准的 raw table |
-| curated | **建表免審**（兩案皆同）：使用者 ELT 產出，提交即執行；僅做命名/配額檢核 | 計入儲存配額；alter/delete 同樣提交即執行 ⚠️（是否也要 owner approve 待確認） |
-| database 層 | 新增 database（`{ws}__{user_defined}__{zone}` 三件組）走本流程，核准段同 raw | 刪 database 屬高風險操作，兩案皆需 ws owner approve + 平台冷靜期 ⚠️ |
+## Managed
 
-## 流程
+### Database 命名
 
-### 1. 提交（兩案相同）
-ws 成員在 web console 提交申請，內容：
-- 操作類型（create / alter / delete）與目標物件（database 或 table、zone）
-- Table schema（create/alter：完整 DDL 或表單式欄位定義；系統產生最終 DDL）
-- 用途說明、預估資料量與成長（raw 建表必填，供容量與選配評估）
-- 系統即時檢核（提交前擋下）：命名符合 `{ws}__{user_defined}__{zone}` 且總長 ≤64、user_defined 不含 `__`；目標 zone 合法（tmp 不可申請）；ws 儲存配額餘裕。
+`{workspace}__{user_defined}__{raw|curated}`，規則與範例見 [authorization.md](authorization.md#database-命名)。提交時即檢核：命名合法、總長不超過 Doris 上限、目標 zone 合法、ws 儲存配額足夠。
 
-### 2. 核准（兩案分歧點）
+### Raw table（平台執行）
 
-| | 方案 A：Owner 治理 | 方案 B：平台治理 |
-|---|---|---|
-| raw 建表/alter | **ws owner approve**（平台不審核） | **平台審核（嚴審）**：schema 設計、分區/分桶、Key 模型、預估量合理性 |
-| curated | 免審（提交即執行） | 免審（提交即執行） |
-| delete（table/database） | ws owner approve | ws owner approve + 平台確認（資料管理責任方） |
-| 平台角色 | 被動：使用者可主動尋求建表建議（選配服務） | 主動把關：schema 品質屬 managed 四大責任之一 |
-| 品質責任 | 使用者（責任歸屬條款處理「效能不佳歸咎平台」風險） | 平台 |
-| 核准時效 | owner 即時操作，分鐘級 | 平台工作日內回覆（SLA 待 Phase 5）⚠️ |
-
-### 3. 執行（兩案相同）
-- 核准後平台系統**自動執行** DDL：使用者全程無直接 DDL 權限。
-- 執行結果（成功/失敗+原因）通知申請者與 owner；所有申請與執行留存稽核紀錄（誰申請、誰核准、何時執行、DDL 全文）。
-- alter/delete 執行前系統自動記錄變更前 schema（供回溯；資料本身的備份依 managed 備份政策）。
-
-## 行為規格
+1. Owner 提交申請：操作類型（create／alter／drop）、目標表、schema、用途、預估資料量。
+2. 是否需要平台審核 schema → TBD-7。
+3. 平台系統帳號執行，結果通知申請者。
 
 | # | 情境 | 行為 |
 |---|------|------|
-| 1 | 建 raw table 且命名合法 | 依方案 A/B 進核准 → 核准後系統執行 → pipeline merge SQL 即可指向此表 |
-| 2 | 命名違規（含 `__`、超長、zone 不符） | 提交即擋，附具體規則說明 |
-| 3 | 對 tmp zone 提出 DDL 申請 | 拒絕：tmp 由平台管理 |
-| 4 | 建 curated table | 免審即執行；計入儲存配額 |
-| 5 | delete table（raw/curated） | 需 owner approve（方案 B 另加平台確認）；執行前快照 schema、依保留政策處理資料 ⚠️（立即清除 vs 軟刪除冷靜期，Phase 5/6 定） |
-| 6 | 申請時 ws 儲存配額不足以容納預估量 | 提交擋下，引導走 tier 升級流程（cluster-topology-and-tiering） |
-| 7 | 被 pipeline merge SQL 引用中的 raw table 遭 delete 申請 | 系統警示引用中的 pipeline/job，需先解除引用才可核准 |
-| 8 | DDL 執行失敗（Doris 端錯誤） | 申請標 FAILED + 通知；平台介入處理（managed 責任），不留半完成狀態 |
+| 1 | 命名違規（含 `__`、超長、zone 不符） | 提交即擋，附具體規則 |
+| 2 | 預估量超過 ws 儲存配額餘裕 | 擋下，引導走 tier 升級（[cluster-topology-and-tiering.md](cluster-topology-and-tiering.md)） |
+| 3 | 刪除仍被 ingestion pipeline 寫入的 raw 表 | 先解除引用才可執行 |
+| 4 | Doris 端執行失敗 | 標 FAILED 並通知；平台處理，不留半完成狀態 |
+| 5 | 刪除後的資料處置 | 立即清除或保留冷靜期 → TBD-15 |
 
-## API 邏輯
+### Curated table（service account 直接執行）
 
-| Method | Path | 說明 |
-|--------|------|------|
-| POST | `/api/v1/workspaces/{ws}/ddl-requests` | 提交申請（操作類型、目標、schema、用途、預估量） |
-| GET | `/api/v1/workspaces/{ws}/ddl-requests` | 列出申請與狀態（PENDING_APPROVAL / APPROVED / EXECUTED / REJECTED / FAILED） |
-| POST | `/api/v1/workspaces/{ws}/ddl-requests/{id}/approve` | 核准（方案 A：owner 權限；方案 B：平台審核介面另計） |
-| POST | `/api/v1/workspaces/{ws}/ddl-requests/{id}/reject` | 退回（附原因） |
-| GET | `/api/v1/workspaces/{ws}/schemas` | 檢視 ws 現有 database/table 與 schema 版本歷史 |
+- Service account 在 curated database 可直接 CREATE／DROP／TRUNCATE TABLE，計入儲存配額。
+- **待 PM 重新評估（TBD-30）**：開放直接建表會帶來下方「開放直接 DDL 的風險」。tier 1 是 shared cluster，FE 由多個 workspace 共用，一個 workspace 出錯會影響同 cluster 的所有租戶，風險高於 self-managed。
 
-### 錯誤碼
-| HTTP | 錯誤碼 | 情境 |
+## Self-managed
+
+- Database 與 table 的 DDL 目前一律走「提交 → 驗證（語法、危險操作、撞名）→ 平台代建並注入保護性設定」，不審 schema 設計；細節與責任分工見 RFC-003 §2、§6。
+- Database 組織方式（固定三庫／命名規則／表單宣告）、備份與否 → TBD-8（待 manager 決策）。
+
+### dbt 的範圍（若開放直接 DDL）
+
+| 範圍 | 適用情境與取捨 |
+|------|----------------|
+| A：所有可用 database | 團隊負責所有表的生命週期時較直接，平台工單較少；團隊須承擔誤刪來源表或正式表的影響 |
+| B：指定的輸出 database | dbt 讀取來源、在指定 database 重建模型；可保護其他團隊依賴的表，平台須維護 database 用途及跨庫讀權 |
+
+- ALTER、RENAME 及 view 權限依實際模型確認。
+- Doris 的 TRUNCATE TABLE 與 DROP TABLE 都需要表級 `DROP_PRIV`，無法分開授權。若要分開管理，可評估由平台依操作類型代為執行，避免直接授予 `DROP_PRIV`。
+- 執行身分、允許範圍與 dbt 操作方式 → TBD-23。
+
+## 開放直接 DDL 的風險與可研究的防護
+
+適用於 self-managed 開放 dbt 直接 DDL（TBD-29）與 managed curated 開放建表（TBD-30）。下列「依據」標「推論」者需在 4.1.4 實機驗證。
+
+### 風險
+
+| 風險 | 說明 | 依據 |
+|------|------|------|
+| FE metadata 膨脹 | FE 把 partition、tablet、replica 的 metadata 放在記憶體；tablet 數約為 partition 數 × bucket 數 × 副本數。partition 過碎或 bucket 過多會讓 tablet 數成倍放大，造成 FE heap 壓力、長時間 Full GC，嚴重時 FE OOM，整座 cluster 的查詢與 DDL 停擺；重啟重播 metadata 也會變慢 | Doris 架構；官方 memory FAQ 指出 tablet 過多多半來自 partition 與 bucket 過多 |
+| 回收站累積 | DROP TABLE 預設進回收站保留 1 天（`catalog_trash_expire_second`），期間仍占 metadata 與磁碟。dbt 反覆重建 model（建暫存表 → 寫入 → 替換 → 刪舊表），每小時跑一次就累積 24 份 | 官方 Recycle Bin 文件 |
+| DDL 頻率 | 每次 create／drop 都寫入 FE metadata journal，高頻 DDL 加重 journal 與 checkpoint 負擔 | 推論 |
+| BE 負擔 | tablet 過多拖慢 compaction、增加 BE 記憶體；小批量高頻寫入使版本數暴增，觸發拒寫（-235） | 官方 memory FAQ；RFC-003 §7 |
+
+### 可研究的防護
+
+| 防護 | 擋什麼 | 依據 |
 |------|--------|------|
-| 422 | `WS_NOT_MANAGED` | self-managed ws 呼叫本流程 |
-| 422 | `NAMING_RULE_VIOLATION` | 命名不符慣例或 Doris 限制 |
-| 422 | `TMP_ZONE_NOT_ALLOWED` | 對 tmp 提 DDL |
-| 422 | `QUOTA_INSUFFICIENT` | 預估量超出配額餘裕 |
-| 409 | `TABLE_IN_USE_BY_PIPELINE` | delete 目標仍被 pipeline 引用 |
+| Database 級 replica quota（`ALTER DATABASE … SET REPLICA QUOTA`） | 限制單一 database 的 replica 總數，替爆炸半徑設上限 | 官方 ALTER DATABASE 文件；預設約 10 億，需自行調低 |
+| Partition 數量上限 | 限制單次建立的 partition 數 | `max_dynamic_partition_num` 預設 500；auto partition 的上限待查 |
+| `DROP … FORCE` 或縮短回收站保留時間 | 避免舊表在回收站累積 | 官方 Recycle Bin 文件；代價是誤刪無法救回 |
+| 限定 dbt 只寫指定的輸出 database（上表方案 B） | 把風險圈在單一 database，搭配 replica quota | — |
+| 平台提供 dbt 設定範本、macro（預設 partition、bucket）＋ CI 檢查 | 從源頭擋設定錯誤 | 組織面配套 |
+| 監控 FE heap、tablet 數、回收站大小 | 在崩潰前發現 | 接 [monitoring-alerting.md](monitoring-alerting.md) |
+| Gateway 限制 DDL 頻率 | 擋失控的 DDL 迴圈 | 推論；需確認 gateway 能否辨識 DDL |
 
-## 與其他功能的依賴關係
-- **workspace-application**：申請投影片附的 schema 即 raw 初始建表（核准來源依方案 A/B）；開通後增修表走本流程。
-- **streaming/batch-ingestion**：merge SQL 目標必須是本流程核准的 raw table（`RAW_TABLE_NOT_APPROVED` 檢核的資料來源）。
-- **workspace-isolation**：DDL 執行帳號為平台系統帳號；使用者帳號無 DDL 權限（access-control 落實）。
-- **quota-and-usage**：建表預估量與實際占用的配額檢核/計量。
+建議先在 4.1.4 實測：replica quota 是否有效擋下超量建表、FE heap 與 tablet 數的關係，再決定是否開放。
 
-## 待確認事項
-1. **方案 A vs B**（PM/管理層，open issue #7）——本 spec 定案後刪落選案。
-2. curated 的 alter/delete 是否完全免審，或 delete 至少要 owner approve。
-3. delete 的資料處置：立即清除 vs 軟刪除冷靜期（天數）。
-4. 方案 B 的平台審核 SLA（Phase 5）。
+## 驗收標準
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
-
-## 驗收標準（Acceptance Criteria）
-- [ ] 使用者帳號實測無任何直接 DDL 權限（含 curated）
-- [ ] 命名檢核擋下全部違規樣態（`__`、超長、tmp、zone 不符）
-- [ ] 兩案的核准路徑均可運作（定案前 console 以 feature flag 切換展示 ⚠️ 或僅實作定案方案）
-- [ ] 稽核紀錄完整：申請→核准→執行全鏈路可回溯，含 DDL 全文與變更前 schema
-- [ ] pipeline 引用中的表無法被誤刪
+- [ ] Managed service account 對 raw 無任何 DDL 權限
+- [ ] 命名檢核擋下全部違規樣態
+- [ ] 稽核紀錄可回溯：申請 → 核准 → 執行，含 DDL 全文與變更前 schema
+- [ ] 仍被 pipeline 寫入的 raw 表無法被誤刪

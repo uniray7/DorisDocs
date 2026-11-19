@@ -54,6 +54,7 @@
 | R6 | 佈建時建的初始 raw 表要不要補稽核紀錄 | journey 提醒 1 | 要，回寫一筆 DDL 申請紀錄 |
 | R7 | Self-managed DDL 代建「初期人工」走什麼管道、時效多久 | RFC-003 §8 | 列 TBD（PM 定管道，工程師估時效） |
 | R8 | `managed-service-journey.md` 的去留 | §3 | 斷點處理完後併入 PRD，刪檔 |
+| R9 | `authorization.md`、`access-control.md`、`ddl-governance.md` 尚未定稿（2b-1 合併後的版本），需再討論 | §7 | 步驟 2–4 完成後安排一輪討論 |
 
 ---
 
@@ -73,7 +74,7 @@
 
 ## 4. TBD 清單（交 PM／工程師研究）
 
-> 整理後會放進 `00-progress.md`，作為**唯一**的待決清單，取代現有三套編號。
+> 整理後會放進 `00-progress.md`，作為**唯一**的待決清單，取代現有三套編號。文件內以 `TBD-<n>` 引用，編號與本表 T<n> 相同（T1–T20 在本表，T21 起在 §7.2）。
 
 | # | 主題 | 建議負責 | 原出處 |
 |---|------|----------|--------|
@@ -83,9 +84,9 @@
 | T4 | 超標但不願升級的處置（限流 vs 擋寫） | PM | 待拍板 #4 |
 | T5 | Row/column filter 是否由平台提供 | PM＋工程師 | open #3 |
 | T6 | PII／機敏資料的平台責任範圍 | PM＋Security | open #5 |
-| T7 | Managed DDL 治理：方案 A／B | PM／管理層 | open #7 |
+| T7 | Managed raw table 由平台建，建表前是否需平台審核 schema（取代原方案 A／B，見 A5） | PM／管理層 | open #7 |
 | T8 | Self-managed DDL 治理形態 Option 1/2/3、備份甲／乙 | Manager | RFC-003 |
-| T9 | HA：預設或選配、standby 資源計算、RPO/RTO、failover 觸發與判定 | PM＋工程師 | self-managed-operations |
+| T9 | HA 中長期做法：機器與 replica 分散到 3 個機櫃或 3 個 datacenter；可用性目標與 RPO/RTO | PM＋工程師 | ha-dr |
 | T10 | Arrow Flight 能否經 gateway、QPS 怎麼計量 | 工程師 | RFC-002 |
 | T11 | 初始帳號不含 GRANT_PRIV 的可行性 | 工程師 | RFC-003 §11 |
 | T12 | Batch ingestion 的 6 項假設（來源、格式、觸發、錯誤門檻等） | PM（訪談使用者）＋工程師 | batch-ingestion |
@@ -155,13 +156,19 @@
 | T21 | 同一 workspace 在同一 fab 能否使用多座 cluster | 主管 |
 | T22 | Managed curated 是否開放 ALTER TABLE | PM＋工程師 |
 | T23 | Self-managed TRUNCATE／DROP 的執行身分與範圍；dbt 範圍 A／B | 主管＋工程師 |
-| T24 | 公司識別碼對應 Doris 帳號、首次登入憑證交付、owner 離職／轉調接手 | 工程師＋PM |
+| T24 | 公司識別碼對應 Doris 帳號、首次登入憑證交付、owner 離職／轉調接手、v0.12 人員帳號與 service account 模型的對應 | 工程師＋PM |
 | T25 | 是否支援整庫分享（含未來新表）、限時分享 | PM |
 | T26 | 命名白名單細節（user_defined 可否數字開頭等） | 工程師 |
 | T27 | OPA 外掛 PoC（4.1.4 相容性、兩種協定一致性、revoke 生效來源） | 工程師 |
 | T28 | tmp 取消後的 ingestion 流程：CDC／batch 資料如何進 raw、parse／merge 由誰做 | 工程師＋PM |
 | T29 | Self-managed 開放 dbt 直接 DDL 的風險與防護（FE metadata、partition／tablet 上限、回收站、DDL 頻率） | 工程師＋主管 |
 | T30 | Managed curated 開放 service account CREATE／DROP TABLE 是否安全（同 T29 的 FE metadata 風險；shared cluster 上 FE 為多租戶共用，影響範圍更大） | PM＋工程師 |
+| T31 | 跨 workspace 分享（v0.12：owner 分享 SELECT 給其他 workspace 的 reader），見 A1 | PM＋主管 |
+| T32 | DDL 申請的提交管道（人工或 Console）與執行時效（兩種模式），取代 R7 | PM＋工程師 |
+| T33 | 監控堆疊與告警歸屬（含 80% 預警由哪個系統計算），取代 R5 | 工程師 |
+| T34 | Web Console Admin 後台要涵蓋哪些 workspace 開通動作（建 database、帳號、權限等） | 工程師（Tool Team）＋PM |
+| T35 | 資料搬遷做法（CCR、backup／restore、匯出匯入等候選）、流程、回退；換服務模式時由誰搬 | 工程師＋PM |
+| T36 | DR：backup／restore 到 S3 或 MinIO 的範圍、頻率、保留期、還原流程與演練 | 工程師＋PM |
 
 ### 7.3 合併方式（建議）
 
@@ -181,11 +188,13 @@
 | A2 | 採用 fab 維度，**與 HA 無關**：workspace 申請時指定要在哪些 fab 使用服務，平台在每個 fab 各自提供**相同數量、彼此獨立**的 Doris 服務，**不跨 fab 部署** | 2026-11-19 |
 | A3 | **維持純人工申請**（投影片＋週三申請會議＋人工追蹤表）；v0.12 的 Console 申請／審核頁不作為現況 | 2026-11-19 |
 | A4 | 採用 v0.12 方向：curated database 可直接 CREATE／DROP／TRUNCATE TABLE（執行身分為 service account，見 A10；是否安全見 T30），ALTER 見 T22；7/17「curated 自建擱置」決議移入 decision-history | 2026-11-19 |
-| A3 補充 | v0.12 的 Console 申請頁／審核頁／開通狀態**不寫入**文件 | 2026-11-19 |
+| A3 補充 | v0.12 的 Console 申請頁／審核頁／開通狀態**不寫入**文件；申請與審核人工，**核准後由平台透過 Web Console 的 Admin 後台執行開通**（TBD-34：後台涵蓋哪些開通動作） | 2026-11-19 |
 | A5 | Managed DDL 方案 A／B 縮小為一個 TBD：**raw 由平台建，建表前要不要平台審核 schema**（取代 T7） | 2026-11-19 |
 | A6 | **tmp zone 取消**，managed 只剩 raw／curated。連帶影響：streaming／batch 原本「CDC → tmp → 使用者 merge SQL → raw」的流程要改寫（新 TBD：T28） | 2026-11-19 |
 | A8 | **未定，需團隊討論**：是否讓 self-managed 使用者因 dbt 直接 CREATE／DROP table（不經平台）。主要擔憂：過多／過碎的 partition 造成 FE memory 壓力甚至 cluster crash；需研究防護（新 TBD：T29）。**不另開 RFC**：風險與可研究的防護寫在 `docs/internal/prd/ddl-governance.md` | 2026-11-19 |
 | A10 | **資料存取一律透過 service account**：workspace 內不開放個人帳號直接存取 table，所有存取都向平台申請 service account。權限：raw database **只能讀**；curated database 可 **CREATE／INSERT／DROP TABLE**（Doris 的 TRUNCATE 與 DROP 同屬 DROP_PRIV）。curated 開放建表列 TBD（T30），請接手 PM 依 A8 風險重新評估 | 2026-11-19 |
+| HA（新決議） | **捨棄 active-standby＋CCR 架構**。目前 HA＝cluster 部署在多台機器、每個 table 3 個 replica，單一機器 crash 可容錯；中長期分散到 3 個機櫃或 3 個 datacenter，做法見 T9。2b-2 需移除各文件的 active-standby／CCR／failover 描述 | 2026-11-19 |
+| DR／搬遷（新決議） | DR 方向：未來需要 backup／restore 到 S3 或 MinIO（T36）。CCR 也從 tier 遷移流程拿掉；**資料搬遷獨立成 `prd/data-migration.md`**，說明為何需要搬遷，CCR 與 backup／restore 列為候選做法（T35） | 2026-11-19 |
 | A12 | Row／column filter 維持待決（T5），補上 v0.12 的長期做法：以 OPA 外掛做 row filter／column mask，待 PoC（T27） | 2026-11-19 |
 
 ---
@@ -218,6 +227,7 @@ docs/
       quota-and-usage.md
       self-managed-operations.md
       ha-dr.md                    ← 新增骨架
+      data-migration.md           ← 新增（資料搬遷）
       monitoring-alerting.md      ← 新增骨架
       web-console.md              ← 新增骨架（Tool Team 的 Console 總覽）
     rfc/
@@ -254,6 +264,7 @@ docs/
 | 資料寫入 | `prd/streaming-ingestion.md`、`prd/batch-ingestion.md` | 現有 |
 | 配額與用量 | `prd/quota-and-usage.md` | 現有 |
 | HA／DR | `prd/ha-dr.md` | 新增骨架 |
+| 資料搬遷 | `prd/data-migration.md` | 新增 |
 | 監控告警 | `prd/monitoring-alerting.md` | 新增骨架 |
 | Web Console | `prd/web-console.md` | 新增骨架 |
 | Self-managed 營運支援 | `prd/self-managed-operations.md` | 現有 |

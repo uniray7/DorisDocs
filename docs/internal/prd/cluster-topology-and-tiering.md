@@ -51,13 +51,12 @@ TIER_CHANGE_REQUESTED（使用者申請或平台觸發）
 ### 遷移方式
 | 情境 | 方式 | 停機 |
 |------|------|------|
-| Tier 1 → 2（shared → dedicated，必為 managed） | 平台負責：新 dedicated cluster 佈建 → 資料搬遷（優先評估 CCR/backup-restore）→ 切換連線端點 | 目標：僅切換窗口短暫唯讀 |
+| Tier 1 → 2（shared → dedicated，必為 managed） | 平台負責：新 dedicated cluster 佈建 → 資料搬遷（做法見 [data-migration.md](data-migration.md)）→ 切換連線端點 | 目標：僅切換窗口短暫唯讀 |
 | Tier 2 → 3（dedicated 擴容，managed） | 平台負責：優先原 cluster 加 BE 節點（無資料搬遷）；機型不符時才整座搬遷 | 加節點無停機 |
 | Tier 2 → 3（self-managed） | 屬「scale 代操作」：平台執行加節點，成本反映（見 self-managed-operations） | 加節點無停機 |
 | 降級（用量長期遠低於 tier） | 使用者申請；平台評估後執行（縮容或搬回 shared）；不強制 | 同上 |
 
-- Database 命名跟模式走、與 tier 無關（Decision Log 2026-07-13），遷移**不涉及改名**；連線端點變更透過交付新連線資訊（未來可評估統一 proxy/DNS 讓端點不變）。
-- 遷移期間的寫入處理：managed 暫停 pipeline（Kafka 積壓緩衝，遷移後追上）；self-managed 由使用者配合窗口暫停寫入（責任歸屬寫入對外文件）。
+- 搬遷的共通要求（一致性、停機、寫入處理、名稱不變、帳號權限重建、連線端點）與候選做法見 [data-migration.md](data-migration.md)。
 
 ## API 邏輯
 
@@ -82,7 +81,7 @@ TIER_CHANGE_REQUESTED（使用者申請或平台觸發）
 - 用量數據來自 **quota-and-usage** 的計量；預警通知共用其通知管道。
 - 遷移中的隔離組重建呼叫 **workspace-isolation** 佈建原語。
 - Self-managed 擴容的成本反映與 **self-managed-operations** 銜接。
-- 資料搬遷機制與 HA 的 CCR 能力共用（system-architecture 展開）。
+- 資料搬遷的做法：**data-migration**（TBD-35）。
 
 ## 邊界審查（Phase 4 補上）
 | Edge Case | 是否適用 | 處理方式 |

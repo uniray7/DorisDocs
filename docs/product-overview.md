@@ -67,19 +67,8 @@ Tier 1 為 shared cluster（僅 managed），tier 2 起為 dedicated；超過 ti
 ## 七、需要管理層/PM 拍板或注意的事項
 
 ### 待拍板（會影響產品走向）
-| TBD | 事項 | 影響 | 建議時點 |
-|---|------|------|----------|
-| TBD-3 | **計費模式**：chargeback 實收 vs showback 僅報表 vs 免費內部服務（**目前無任何付費機制**） | 影響成本中心綁定的意義、超額處理、代操作成本歸屬 | NFR 定案前（近期） |
-| TBD-1 | **Tier 門檻與儲存/運算解耦**（RFC） | 影響定價與硬體採購規劃 | RFC 討論 |
-| TBD-2 | **超過 tier 3 的大型需求**如何承接 | 是否為此擴充硬體，或明確拒收 | 首個大戶出現前 |
-| TBD-4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 TBD-3 一併 |
-| TBD-5 | **Row/column filter**（細粒度權限）做不做在平台側 | Self-managed 使用者要求對指定 table 做 row filtering／column masking；長期方向為以 OPA 外掛實作，待 PoC | RFC 討論 |
-| TBD-6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
-| TBD-7 | **Managed raw 建表是否需平台審核 schema**（curated 已改由 service account 直接建立） | 審核可控品質，但增加平台人力；不審則品質責任在使用者 | PM／管理層決定 |
-| TBD-20 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
-| TBD-8 | **Self-managed 的 DDL 治理形態與資料管理 R&R**（RFC-003 已成文） | 前提已定：DDL 一律平台代建（先緊縮後放寬，dbt 需求出現再議）。待決：database 組織方式 Option 1/2/3（團隊建議 3：表單宣告制）；備份改由 DR 規劃（TBD-36） | **Manager 決策**，RFC-003 為決策文件 |
-| TBD-29／30 | **是否開放直接建表**：self-managed 因 dbt 直接 CREATE／DROP、managed curated 由 service account 直接建表 | 過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash；shared cluster 上影響所有租戶。風險與可研究的防護見 `internal/prd/ddl-governance.md` | 開放前 |
-| TBD-31 | **跨 workspace 分享**：owner 可否分享 table 讀取權給其他 workspace | 與原本「不支援」的定位相反，影響隔離設計與對外溝通 | 對外文件前 |
+
+需要管理層拍板的事項：TBD-1、TBD-2、TBD-3、TBD-4、TBD-5、TBD-6、TBD-7、TBD-8、TBD-20、TBD-29、TBD-30、TBD-31。各項的影響、負責人與狀態見 [00-progress.md 的 TBD 清單](00-progress.md#tbd-清單)。
 
 ### 需注意的風險
 - **人工申請流程的規模瓶頸**：每週三會議承載量有限，申請量成長時會排隊；已預留自動化路徑，但需要有觸發升級的判斷點。

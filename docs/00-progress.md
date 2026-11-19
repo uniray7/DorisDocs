@@ -47,18 +47,18 @@
 
 ## TBD 清單
 
-> 全 repo 唯一的待決清單，文件內以 `TBD-<編號>` 引用。「被引用」列出提到該 TBD 的文件（不含本頁與 improvement-plan），新增或移除引用時要同步更新。
+> 全 repo 唯一的待決清單，文件內以 `TBD-<編號>` 引用。「被引用」列出提到該 TBD 的文件（不含本頁與 improvement-plan），新增或移除引用時要同步更新。需要管理層拍板的項目，在「主題」欄註明**影響**。
 
 | # | 主題 | 建議負責 | 阻擋 | 出處 | 被引用 | 狀態 |
 |---|------|----------|------|------|--------|------|
-| TBD-1 | Tier 門檻、儲存與運算解耦（RFC 尚未撰寫） | PM＋工程師 | 無 | cluster-topology-and-tiering | cluster-topology-and-tiering、managed-user-journey、prd/README、product-overview | 未開始 |
-| TBD-2 | 超過 tier 3 的需求如何承接 | PM | 無 | cluster-topology-and-tiering | cluster-topology-and-tiering、prd/README、product-overview、workspace-application | 未開始 |
-| TBD-3 | 計費模式（chargeback／showback／免費） | PM／管理層 | prd/README NFR 章節 | product-overview | prd/README、product-overview、quota-and-usage、self-managed-operations | 未開始 |
-| TBD-4 | 超標但不願升級的處置（限流或擋寫） | PM | 無 | quota-and-usage | cluster-topology-and-tiering、product-overview、quota-and-usage | 未開始 |
-| TBD-5 | Row／column filter 是否由平台提供（長期方向：OPA） | PM＋工程師 | 無 | authorization | decision-history、prd/README、product-overview、self-managed-operations、RFC-003 | 未開始 |
-| TBD-6 | PII／機敏資料的平台責任範圍 | PM＋Security | prd/README 治理章節 | prd/README | prd/README、product-overview、staging-validation、workspace-application、RFC-003 | 未開始 |
-| TBD-7 | Managed raw table 建表前是否需平台審核 schema | PM／管理層 | 無 | ddl-governance | ddl-governance、decision-history、managed-user-journey、prd/README、product-overview、workspace-application | 未開始 |
-| TBD-8 | Self-managed database 組織方式（固定三庫／命名規則／表單宣告） | Manager | 無 | RFC-003 | authorization、ddl-governance、decision-history、prd/README、product-overview、self-managed-operations、workspace-application、workspace-isolation、RFC-003 | 研究中 |
+| TBD-1 | Tier 門檻、儲存與運算解耦（RFC 尚未撰寫）。**影響**：定價與硬體採購規劃 | PM＋工程師 | 無 | cluster-topology-and-tiering | cluster-topology-and-tiering、managed-user-journey、prd/README、product-overview | 未開始 |
+| TBD-2 | 超過 tier 3 的需求如何承接。**影響**：決定要為此擴充硬體，或明確拒收 | PM | 無 | cluster-topology-and-tiering | cluster-topology-and-tiering、prd/README、product-overview、workspace-application | 未開始 |
+| TBD-3 | 計費模式（chargeback／showback／免費）。**影響**：成本中心綁定的意義、超額處理、代操作成本歸屬；目前無任何付費機制 | PM／管理層 | prd/README NFR 章節 | product-overview | prd/README、product-overview、quota-and-usage、self-managed-operations | 未開始 |
+| TBD-4 | 超標但不願升級的處置（限流或擋寫）。**影響**：與計費模式連動，宜與 TBD-3 一併決定 | PM | 無 | quota-and-usage | cluster-topology-and-tiering、product-overview、quota-and-usage | 未開始 |
+| TBD-5 | Row／column filter 是否由平台提供（長期方向：OPA）。**影響**：self-managed 使用者已提出需求 | PM＋工程師 | 無 | authorization | decision-history、prd/README、product-overview、self-managed-operations、RFC-003 | 未開始 |
+| TBD-6 | PII／機敏資料的平台責任範圍。**影響**：審核流程與合規成本 | PM＋Security | prd/README 治理章節 | prd/README | prd/README、product-overview、staging-validation、workspace-application、RFC-003 | 未開始 |
+| TBD-7 | Managed raw table 建表前是否需平台審核 schema。**影響**：審核可控品質但增加平台人力；不審則品質責任在使用者 | PM／管理層 | 無 | ddl-governance | ddl-governance、decision-history、managed-user-journey、prd/README、product-overview、workspace-application | 未開始 |
+| TBD-8 | Self-managed database 組織方式（固定三庫／命名規則／表單宣告）。**影響**：團隊建議 Option 3（表單宣告制）；RFC-003 為決策文件 | Manager | 無 | RFC-003 | authorization、ddl-governance、decision-history、prd/README、product-overview、self-managed-operations、workspace-application、workspace-isolation、RFC-003 | 研究中 |
 | TBD-9 | HA 中長期做法：分散到 3 機櫃或 3 datacenter；可用性目標、RPO／RTO | PM＋工程師 | 無 | ha-dr | decision-history、ha-dr、prd/README、product-overview | 未開始 |
 | TBD-10 | Arrow Flight SQL 能否經 gateway、QPS 怎麼計量 | 工程師 | 無 | RFC-002 | access-control、quota-and-usage、RFC-002 | 未開始 |
 | TBD-11 | 使用者帳號不含 `GRANT_PRIV` 的技術驗證 | 工程師 | 無 | access-control | access-control、RFC-003 | 未開始 |
@@ -70,7 +70,7 @@
 | TBD-17 | 保護性 config 清單、FE 封頂參數 | 工程師 | 無 | self-managed-operations | self-managed-operations、RFC-003 | 未開始 |
 | TBD-18 | Metadata 隔離 3 項驗證（information_schema、PROCESSLIST、錯誤訊息） | 工程師 | 無 | workspace-isolation | workspace-isolation | 未開始 |
 | TBD-19 | 儲存配額計單副本或全副本 | PM＋工程師 | 無 | quota-and-usage | quota-and-usage | 未開始 |
-| TBD-20 | 時程與首個目標部門 | PM | 無 | prd/README | prd/README、product-overview | 未開始 |
+| TBD-20 | 時程與首個目標部門。**影響**：目前皆未定，越早決定越好 | PM | 無 | prd/README | prd/README、product-overview | 未開始 |
 | TBD-21 | 同一 workspace 在同一 fab 能否使用多座 cluster（目前傾向一座） | 主管 | 無 | authorization | authorization、cluster-topology-and-tiering | 未開始 |
 | TBD-22 | Managed curated 是否開放 ALTER TABLE | PM＋工程師 | 無 | authorization | access-control、authorization、ddl-governance、decision-history | 未開始 |
 | TBD-23 | Self-managed TRUNCATE／DROP 的執行身分與範圍；dbt 範圍 A／B | 主管＋工程師 | 無 | ddl-governance | authorization、ddl-governance | 未開始 |
@@ -79,9 +79,9 @@
 | TBD-26 | 命名白名單細節（user_defined 可否數字開頭等） | 工程師 | 無 | authorization | authorization、decision-history、managed-user-journey、prd/README、workspace-application | 未開始 |
 | TBD-27 | OPA 外掛 PoC（4.1.4 相容性、兩種協定一致性、revoke 生效來源） | 工程師 | 無 | authorization | authorization、decision-history | 未開始 |
 | TBD-28 | tmp 取消後的 ingestion 流程：CDC／batch 資料如何進 raw、parse／merge 由誰做、排程機制 | 工程師＋PM | streaming／batch 文件改寫 | streaming-ingestion、batch-ingestion | batch-ingestion、decision-history、managed-user-journey、prd/README、product-overview、streaming-ingestion、web-console | 未開始 |
-| TBD-29 | Self-managed 開放 dbt 直接 DDL 的風險與防護 | 工程師＋主管 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、monitoring-alerting、prd/README、product-overview、self-managed-operations、RFC-003 | 研究中 |
-| TBD-30 | Managed curated 開放 service account CREATE／DROP 是否安全（shared cluster 影響所有租戶） | PM＋工程師 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、managed-user-journey、prd/README、product-overview | 未開始 |
-| TBD-31 | 跨 workspace 分享 | PM＋主管 | 對外文件 | authorization | authorization、decision-history、managed-user-journey、prd/README、product-overview、workspace-isolation | 未開始 |
+| TBD-29 | Self-managed 開放 dbt 直接 DDL 的風險與防護。**影響**：過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash | 工程師＋主管 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、monitoring-alerting、prd/README、product-overview、self-managed-operations、RFC-003 | 研究中 |
+| TBD-30 | Managed curated 開放 service account CREATE／DROP 是否安全。**影響**：shared cluster 上影響同 cluster 所有租戶 | PM＋工程師 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、managed-user-journey、prd/README、product-overview | 未開始 |
+| TBD-31 | 跨 workspace 分享。**影響**：與原本「不支援」的定位相反，影響隔離設計與對外溝通 | PM＋主管 | 對外文件 | authorization | authorization、decision-history、managed-user-journey、prd/README、product-overview、workspace-isolation | 未開始 |
 | TBD-32 | DDL 申請的提交管道（人工或 Console）與執行時效 | PM＋工程師 | 無 | ddl-governance | ddl-governance、managed-user-journey、self-managed-operations、web-console、RFC-003 | 未開始 |
 | TBD-33 | 監控堆疊與告警歸屬（含 80% 預警由哪個系統計算） | 工程師 | 無 | monitoring-alerting | managed-user-journey、monitoring-alerting、prd/README | 未開始 |
 | TBD-34 | Web Console Admin 後台涵蓋哪些開通動作 | 工程師（Tool Team）＋PM | 無 | web-console | decision-history、managed-user-journey、web-console、workspace-application | 未開始 |

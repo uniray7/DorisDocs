@@ -2,6 +2,7 @@
 
 > 來源：[PRD](README.md) § 6.5
 > 狀態：草稿（Phase 3）
+> ⚠️ **tmp zone 已取消（2026-11-19）**：本文件「落 tmp → 使用者 merge SQL → raw」的流程待改寫（TBD-28）。改寫前，涉及 tmp 與 merge SQL 的段落僅供參考。
 
 ## 概念模型
 

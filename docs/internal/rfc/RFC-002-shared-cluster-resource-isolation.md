@@ -4,13 +4,13 @@
 - 作者：平台團隊
 - 日期：2026-07-13
 - 相關 PRD：`internal/prd/README.md § 7`、`internal/prd/workspace-isolation.md § 運算資源隔離`
-- 環境前提：Apache Doris **4.1.0**
+- 環境前提：Apache Doris **4.1.4**
 
 ## 背景
 
 Tier 1（shared cluster，僅 managed 模式）讓多個 workspace 共住同一座 Doris cluster。若不做運算資源隔離，任一租戶的重查詢/爆量會直接劣化鄰居的查詢延遲，違反「小規模團隊也能安心用 shared tier」的產品承諾，也會讓「效能不佳歸咎平台」的糾紛無從釐清。
 
-不做的後果：shared tier 不可信 → 所有租戶被迫申請 dedicated → 硬體池撐不住、tier 1 形同虛設。
+不做的後果：shared tier 不可信 → 所有租戶被迫申請 dedicated → 硬體撐不住、tier 1 形同虛設。
 
 ## 待決問題
 
@@ -28,7 +28,7 @@ Shared cluster 上，用哪一組機制、怎麼組合，來保證單一租戶�
 
 ### 第 1 層：查詢准入
 - Workload Group（per-ws）：`max_concurrency`、`max_queue_size`、`queue_timeout`——超併發先排隊，瞬間爆量兜底（對齊 Max QPS 5 分鐘滑動窗口決議）。
-- **Gateway/proxy（平台自建）**：per-ws QPS 計量與限流（Doris 無原生 QPS 配額）；統一連線端點（tier 遷移、failover 不換線）；集中連線數控管。
+- **Gateway/proxy（平台自建）**：per-ws QPS 計量與限流（Doris 無原生 QPS 配額）；統一連線端點（tier 遷移不換線）；集中連線數控管。
 
 ### 第 2 層：執行資源
 - CPU：`cpu_hard_limit`（**硬限制**；不採 `cpu_share` 軟限制——忙時按比例分無法保障 P99）。
@@ -75,7 +75,7 @@ Tier 1 預設不用。保留兩個適用場景：
 - 監控：per-ws workload group 指標（排隊數、kill 數、限速觸發次數）進 quota-and-usage 儀表板。
 
 ## 待驗證項（實作時）
-- [ ] Doris 4.1.0 各參數的實際行為與文件一致（尤其 cpu_hard_limit 與 IO 限速的組合效果）
+- [ ] Doris 4.1.4 各參數的實際行為與文件一致（尤其 cpu_hard_limit 與 IO 限速的組合效果）
 - [ ] Workload group 數量上限（單 cluster 可承載的 ws 數）
 - [ ] Spill to disk 對 shared SSD 的 IO 反噬程度
 - [ ] Gateway 的 QPS 計量與 Doris 端 workload group 指標的一致性

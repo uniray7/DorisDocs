@@ -12,7 +12,7 @@
 | 計量 | 定義 | 決議來源 |
 |------|------|---------|
 | 儲存用量 | Doris **壓縮後實際占用**（含副本 ⚠️ 待確認：配額計單副本或全副本） | Decision Log 2026-07-13 |
-| 儲存計入範圍（managed） | raw + curated + **tmp + corrupted data + batch landing 殘留** | streaming/batch spec 行為規格 |
+| 儲存計入範圍（managed） | raw + curated + **corrupted data + batch landing 殘留** | streaming/batch spec 行為規格 |
 | QPS | **5 分鐘滑動窗口平均**判超標；瞬間爆量由 workload group 併發兜底 | Decision Log 2026-07-13 |
 | QPS 資料來源 | **Gateway 計量**（RFC-002 第 1 層）；與 Doris audit log 對賬。⚠️ Arrow Flight 查詢的計量路徑待 RFC-002 驗證（gateway 以 MySQL protocol 為前提） | RFC-002 |
 
@@ -21,7 +21,7 @@
 ### 配額與用量頁
 - 儲存：配額、目前占用（壓縮後）、占比、**80% 早期預警狀態**、按 zone/database 分解（managed）。
 - QPS：tier 上限、目前 5 分鐘滑動平均、近 7/30 天峰值曲線。
-- Ingestion：各 pipeline/job 吞吐、tmp 與 corrupted data 占用明細。
+- Ingestion：各 pipeline/job 吞吐、corrupted data 占用明細。
 - 超標紀錄：何時超、超多少、平台採取的動作（限流/通知，依 cluster-topology-and-tiering 政策）。
 
 ### 查詢表現頁
@@ -48,7 +48,7 @@
 
 ## 平台側視角（內部）
 
-- 平台管理員看全 cluster/全 ws 匯總：容量水位（浮動硬體池的採購依據）、各 ws 用量排名、超標事件、shared cluster 的 workload group 指標（RFC-002 監控項）。
+- 平台管理員看全 cluster/全 ws 匯總：容量水位（硬體採購依據）、各 ws 用量排名、超標事件、shared cluster 的 workload group 指標（RFC-002 監控項）。
 - 此視角同時服務計費報表（chargeback/showback，待拍板 #1）。
 
 ## API 邏輯
@@ -64,7 +64,7 @@
 ## 與其他功能的依賴關係
 - 80% 預警與超標處理政策：**cluster-topology-and-tiering**。
 - QPS 計量來源與 kill 事件：**RFC-002**（gateway、workload schedule policy）。
-- tmp/corrupted/landing 占用明細：**streaming/batch-ingestion**。
+- corrupted/landing 占用明細：**streaming/batch-ingestion**。
 - 視圖的 ws 邊界：**workspace-isolation**（metadata 隔離延伸到監控資料）。
 - 配額數值、refresh 週期、計費模式：Phase 5。
 
@@ -84,4 +84,4 @@
 - [ ] 80% 預警與超標事件正確觸發並送達聯絡人；強制告警不可被使用者關閉
 - [ ] 慢查詢/被 kill 清單僅含本 ws 查詢（隔離驗證）
 - [ ] 被 kill 查詢附觸發規則說明（對齊對外使用規範的 kill 門檻條款）
-- [ ] tmp/corrupted/landing 占用計入且可在明細中辨識
+- [ ] corrupted/landing 占用計入且可在明細中辨識

@@ -9,7 +9,14 @@
 1. 作為**申請者**，我想要依申報的容量與效能需求被分配到合適的 tier，以便不占用超出需求的資源。
 2. 作為**平台管理員**，我想要系統依公式自動建議 tier、我只做覆核，以便審核有一致標準。
 3. 作為**成長中的 ws 負責人**，我的用量接近 tier 上限時我想提前收到通知並有明確的升級路徑，以便服務不中斷。
-4. 作為**平台管理員**，我想掌握每個 tier 的資源池水位，以便硬體採購有依據（pool 浮動）。
+4. 作為**平台管理員**，我想掌握每個 tier 的資源池水位，以便硬體採購有依據。
+
+## Fab 與 cluster 拓撲
+
+- 全平台：十幾座 fab，各有多座 cluster，整體預計 20–40 座；Doris 4.1.4 部署在 HashiCorp Nomad 上。
+- Workspace 申請時指定要在哪些 fab 使用服務（**至少兩個**）。平台在每個 fab 各自提供**相同數量、彼此獨立**的 Doris 服務，**不跨 fab 部署**；fab 之間不互為備援（HA 見 [ha-dr.md](ha-dr.md)）。
+- 各 fab 各自指定 shared 或 dedicated cluster。
+- 同一 workspace 在同一 fab 能否使用多座 cluster（目前傾向一座）→ TBD-21。
 
 ## Tier 定義（草案）
 
@@ -20,7 +27,7 @@
 | 3 | 5TB – 30TB | 100 – 500 | Medium dedicated（5–10 BEs，32C/128GB/3.84TB SSD×4） | managed / self-managed |
 | >3 | >30TB 或 >500 QPS | — | 人工洽談（open issue #4） | — |
 
-> ⚠️ **門檻待 RFC 定案（open issue #1）**：現行 data volume 與 QPS 綁在同一 tier 不合理（300GB/200QPS 或 20TB 低頻查詢的 ws 無法歸類）。候選方案：儲存與運算**解耦為兩條軸**——儲存量決定磁碟/BE 數下限，QPS 決定 CPU/併發配置，**取兩者較高者**決定 tier；BE 機型浮動（採購狀況）時以「等效資源單位」換算。本 spec 的流程設計不依賴門檻數字，門檻改版不影響流程。
+> ⚠️ **門檻待 RFC 定案（open issue #1）**：現行 data volume 與 QPS 綁在同一 tier 不合理（300GB/200QPS 或 20TB 低頻查詢的 ws 無法歸類）。候選方案：儲存與運算**解耦為兩條軸**——儲存量決定磁碟/BE 數下限，QPS 決定 CPU/併發配置，**取兩者較高者**決定 tier。本 spec 的流程設計不依賴門檻數字，門檻改版不影響流程。
 
 ## Tier 判定
 
@@ -45,7 +52,7 @@ TIER_CHANGE_REQUESTED（使用者申請或平台觸發）
   → MIGRATING              （見下：遷移方式依模式與方向而異）
   → VERIFYING              （資料一致性核對 + 使用者確認查詢正常）
   → COMPLETED              （舊資源回收）
-  ↘ WAITING_FOR_CAPACITY   （目標 tier 硬體不足：排隊 + 回報預估時間，pool 浮動）
+  ↘ WAITING_FOR_CAPACITY   （目標 tier 硬體不足：排隊 + 回報預估時間）
 ```
 
 ### 遷移方式

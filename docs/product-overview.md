@@ -11,7 +11,7 @@
 
 **為什麼做**：擺脫 Oracle license 成本與綁定、sunset HBase 舊 tech stack。既有分析型資料規模約數百 TB。
 
-**明確不做**：既有資料遷移（各團隊自理）、跨部門資料分享（lakehouse 層解決）、交易型（OLTP）工作負載、BI 工具託管。
+**明確不做**：既有資料遷移（各團隊自理）、交易型（OLTP）工作負載、BI 工具託管。跨 workspace 資料分享方向未定（TBD-31）。
 
 ---
 
@@ -23,10 +23,11 @@
 |---|---|---|
 | 適合對象 | 想省事、接受平台規範的團隊 | 高客製需求、大流量、有能力自管的團隊 |
 | 資料寫入 | 只走平台 pipeline（streaming CDC / batch） | 一律自建 pipeline 自行寫入 |
-| 建表/改表 | 經治理流程核准後由平台系統執行——**治理模式待拍板**（方案 A：ws owner approve、平台不審；方案 B：平台審核把關） | **一律提交平台代建**（驗證＋保護性設定注入，不審 schema 設計；初期從嚴，未來視 dbt 需求討論放寬——RFC-003） |
-| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校；schema 品質把關是否納入平台責任＝待拍板（與治理模式連動） | **使用者自負** |
-| 平台支援 | 完整 | 日常 infra 告警 + 代操作（scale in/out）+ HA（雙 cluster CCR + failover 介入協助）；其他需求提 request 由 PM 排優先權（非義務） |
+| 建表/改表 | Database 由平台建立；raw table 由平台建立（建表前是否審核：TBD-7）；curated table 由 service account 直接建立（是否安全待評估：TBD-30） | Database 由平台建立；table **一律提交平台代建**（驗證＋保護性設定注入，不審 schema 設計）；是否因 dbt 開放直接建表待定（TBD-29） |
+| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校 | **使用者自負** |
+| 平台支援 | 完整 | 日常 infra 告警 + 代操作（scale in/out）；其他需求提 request 由 PM 排優先權（非義務） |
 | 可用規格 | Shared 或 Dedicated cluster | 限 Dedicated cluster（tier 2 起） |
+| 帳號 | Doris user、role、密碼全由平台管理；資料存取一律透過 service account | 同左 |
 
 ## 三、資源分級（Tier）
 
@@ -37,7 +38,9 @@
 | 3 | 5TB–30TB | 100–500 | 專屬中型 cluster（5–10 BEs） | 兩者皆可 |
 | 超過 | >30TB 或 >500 QPS | — | **個案洽談（處理方式待定）** | — |
 
-> ⚠️ 門檻數字為草案。「資料量與 QPS 綁死在同一 tier」已知不合理（例：資料小但查詢重的團隊無法歸類），已規劃 RFC 討論儲存/運算解耦。硬體池浮動（依採購狀況），容量規劃以單一租戶資源模型描述。
+> ⚠️ 門檻數字為草案。「資料量與 QPS 綁死在同一 tier」已知不合理（例：資料小但查詢重的團隊無法歸類），已規劃 RFC 討論儲存/運算解耦。
+
+**Fab**：workspace 申請時指定要在哪些 fab 使用服務（至少兩個）；平台在每個 fab 各自提供相同數量、彼此獨立的 Doris 服務，不跨 fab 部署。
 
 ## 四、使用者旅程
 
@@ -54,20 +57,21 @@
 
 ## 五、Managed 模式的資料管理
 
-- **三層 zone**（對應 Databricks Bronze/Silver/Gold）：`tmp`（CDC 原始落地，平台管理）→ `raw`／`curated`（建表經治理流程核准後由平台系統代執行；核准者依待拍板的治理模式）。
+- **兩層 zone**：`raw`（平台建表、平台 pipeline 寫入）→ `curated`（service account 以 `INSERT … SELECT` 產出、直接建表）。原本的 `tmp` zone 已取消，ingestion 寫入 raw 的流程待改寫（TBD-28）。
 - **Streaming pipeline**：使用者以固定 format 打 message 進平台 Kafka，支援三種 format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；格式錯誤的資料進 corrupted data 區（MinIO）並告警，不中斷匯入。
 - **Batch pipeline**：使用者上傳檔案至平台儲存的 landing 路徑，排程/手動觸發匯入，與 streaming 走同一套落地與治理路徑；來源介面預留未來 lakehouse → Doris 通道的擴充（規格草稿多處假設待確認）。
-- **高可用**（兩種模式皆適用）：active-standby 雙 cluster + cross-cluster replication **盡量維持同步（best-effort）** + failover 時平台介入；RPO/RTO、預設 vs 選配、**standby 資源＝約兩倍硬體**的計算方式待量化——這對容量規劃和成本的影響需要管理層知悉。
+- **高可用**（兩種模式）：cluster 部署在多台機器、每個 table 3 個 replica，單一機器故障可容錯；中長期分散到 3 個機櫃或 3 個 datacenter（做法待研究，TBD-9）。
+- **災難復原**：未來需要 backup／restore 到 S3 或 MinIO（TBD-36）。
 
 ## 六、已定案的關鍵決策（節錄）
 
 | 決策 | 內容 |
 |------|------|
 | 租戶單位 | Workspace（團隊自定粒度），**強制綁定成本中心** |
-| 隔離要求 | 資料、metadata、運算三層完全隔離；**不支援跨 ws 分享**（與 lakehouse 習慣不同，需對使用者前置溝通） |
+| 隔離要求 | 資料、metadata、運算三層完全隔離；跨 ws 分享方向未定（TBD-31） |
 | 模式轉換 | 不可轉換；要換模式需開新 ws 搬資料 |
 | 計量方式 | 儲存：審核用原始大小、上線後按壓縮後占用；QPS：5 分鐘滑動窗口平均 |
-| 命名慣例 | Managed 一律 `{ws}__{自訂}__{zone}`；self-managed 命名自由 |
+| 命名慣例 | Managed 一律 `{ws}__{自訂}__{raw\|curated}`；self-managed 待定（TBD-8） |
 | 對外文件深度 | Managed 須講明使用規範+限制+責任歸屬；self-managed 重點講責任歸屬 |
 
 ## 七、需要管理層/PM 拍板或注意的事項
@@ -79,17 +83,18 @@
 | 2 | **Tier 門檻與儲存/運算解耦**（RFC） | 影響定價與硬體採購規劃 | RFC 討論 |
 | 3 | **超過 tier 3 的大型需求**如何承接 | 是否為此擴 pool、或明確拒收 | 首個大戶出現前 |
 | 4 | **超標但不願升級**的處理：限流維持 vs 強制升級 | 與計費模式連動 | 與 #1 一併 |
-| 5 | **Row/column filter**（細粒度權限）做不做在平台側 | 需求已具體化：self-managed 使用者要求對**指定 table** 做 row filtering / column masking——若承接，是「self-managed 權限自理」原則的唯一例外，且使用者改表後的政策漂移責任要先定 | RFC 討論 |
+| 5 | **Row/column filter**（細粒度權限）做不做在平台側 | Self-managed 使用者要求對指定 table 做 row filtering／column masking；長期方向為以 OPA 外掛實作，待 PoC | RFC 討論 |
 | 6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
-| 7 | **Managed 的 DDL/schema 治理模式** | 方案 A（owner approve、平台不審）：審核成本低、品質責任在使用者；方案 B（平台審核、raw 嚴審）：品質可控、平台審核成本高。影響平台人力配置與責任範圍 | **PM/管理層決定**，兩案已並列於 PRD 與規格 |
+| 7 | **Managed raw 建表是否需平台審核 schema**（curated 已改由 service account 直接建立） | 審核可控品質，但增加平台人力；不審則品質責任在使用者 | PM／管理層決定 |
 | 8 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
 | 9 | **Self-managed 的 DDL 治理形態與資料管理 R&R**（RFC-003 已成文） | 前提已定：DDL 一律平台代建（先緊縮後放寬，dbt 需求出現再議）。待決：治理形態 Option 1/2/3（團隊建議 3：表單宣告制）＋備份甲/乙（暫定甲：不提供、明文免責＋audit log 舉證） | **Manager 決策**，RFC-003 為決策文件 |
+| 10 | **是否開放直接建表**：self-managed 因 dbt 直接 CREATE／DROP、managed curated 由 service account 直接建表 | 過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash；shared cluster 上影響所有租戶。風險與可研究的防護見 `internal/prd/ddl-governance.md` | 開放前 |
+| 11 | **跨 workspace 分享**：owner 可否分享 table 讀取權給其他 workspace | 與原本「不支援」的定位相反，影響隔離設計與對外溝通 | 對外文件前 |
 
 ### 需注意的風險
 - **人工申請流程的規模瓶頸**：每週三會議承載量有限，申請量成長時會排隊；已預留自動化路徑，但需要有觸發升級的判斷點。
 - **Staging 與正式環境落差**：staging 驗不了真實效能，上線後才見真章——對外文件會明確免責，但第一批使用者的預期管理要做好。
-- **硬體池浮動**：tier 2/3 佈建可能因採購進度出現「等待資源」狀態，影響開通 lead time 的承諾。
-- **Lakehouse 使用習慣落差**：使用者習慣跨 workspace 存取，本平台明確禁止——對外溝通不足會成為第一波客訴來源。
+- **Lakehouse 使用習慣落差**：使用者習慣跨 workspace 存取；平台是否支援分享尚未定案（TBD-31），對外溝通前需先定。
 
 ## 八、文件進度與下一步
 

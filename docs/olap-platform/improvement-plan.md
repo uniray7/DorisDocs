@@ -158,12 +158,34 @@
 | T25 | 是否支援整庫分享（含未來新表）、限時分享 | PM |
 | T26 | 命名白名單細節（user_defined 可否數字開頭等） | 工程師 |
 | T27 | OPA 外掛 PoC（4.1.4 相容性、兩種協定一致性、revoke 生效來源） | 工程師 |
+| T28 | tmp 取消後的 ingestion 流程：CDC／batch 資料如何進 raw、parse／merge 由誰做 | 工程師＋PM |
+| T29 | Self-managed 開放 dbt 直接 DDL 的風險與防護（FE metadata、partition／tablet 上限、回收站、DDL 頻率） | 工程師＋主管 |
+| T30 | Managed curated 開放 service account CREATE／DROP TABLE 是否安全（同 T29 的 FE metadata 風險；shared cluster 上 FE 為多租戶共用，影響範圍更大） | PM＋工程師 |
 
 ### 7.3 合併方式（建議）
 
 - v0.12 轉成 markdown，新增為 `internal/prd/authorization.md`，保留原版號與評審狀態。
 - `access-control.md` 與 v0.12 重疊最多：授權相關內容以 v0.12 為準，`access-control.md` 精簡後改連結過去。
 - A1–A13 依確認結果同步修正其他文件；被推翻的舊決議記到 `decision-history.md`。
+
+### 7.4 逐項確認紀錄（步驟 2）
+
+| # | 決定 | 確認日期 |
+|---|------|----------|
+| A11 | 全部文件改為 Doris **4.1.4** | 2026-11-19 |
+| A13 | 以 v0.12 為準：HashiCorp Nomad、Tool Team 負責 Web Console 與授權後端；**刪除「私有雲」「硬體池浮動」的描述** | 2026-11-19 |
+| A9 | 採用 v0.12：Doris user、role、密碼全由平台管理（兩種模式皆同），C13 隨之解決 | 2026-11-19 |
+| A7 | 採用 v0.12：workspace 名稱允許英數字之間的單底線，`__` 保留為分隔符；細節見 T26 | 2026-11-19 |
+| A1 | **列 TBD**：跨 workspace 分享（v0.12 的 owner 分享 SELECT 給其他 workspace reader）方向未定，現有「不支援」與 v0.12 說法都不寫死 | 2026-11-19 |
+| A2 | 採用 fab 維度，**與 HA 無關**：workspace 申請時指定要在哪些 fab 使用服務，平台在每個 fab 各自提供**相同數量、彼此獨立**的 Doris 服務，**不跨 fab 部署** | 2026-11-19 |
+| A3 | **維持純人工申請**（投影片＋週三申請會議＋人工追蹤表）；v0.12 的 Console 申請／審核頁不作為現況 | 2026-11-19 |
+| A4 | 採用 v0.12 方向：curated database 可直接 CREATE／DROP／TRUNCATE TABLE（執行身分為 service account，見 A10；是否安全見 T30），ALTER 見 T22；7/17「curated 自建擱置」決議移入 decision-history | 2026-11-19 |
+| A3 補充 | v0.12 的 Console 申請頁／審核頁／開通狀態**不寫入**文件 | 2026-11-19 |
+| A5 | Managed DDL 方案 A／B 縮小為一個 TBD：**raw 由平台建，建表前要不要平台審核 schema**（取代 T7） | 2026-11-19 |
+| A6 | **tmp zone 取消**，managed 只剩 raw／curated。連帶影響：streaming／batch 原本「CDC → tmp → 使用者 merge SQL → raw」的流程要改寫（新 TBD：T28） | 2026-11-19 |
+| A8 | **未定，需團隊討論**：是否讓 self-managed 使用者因 dbt 直接 CREATE／DROP table（不經平台）。主要擔憂：過多／過碎的 partition 造成 FE memory 壓力甚至 cluster crash；需研究防護（新 TBD：T29）。**不另開 RFC**：風險與可研究的防護寫在 `docs/internal/prd/ddl-governance.md` | 2026-11-19 |
+| A10 | **資料存取一律透過 service account**：workspace 內不開放個人帳號直接存取 table，所有存取都向平台申請 service account。權限：raw database **只能讀**；curated database 可 **CREATE／INSERT／DROP TABLE**（Doris 的 TRUNCATE 與 DROP 同屬 DROP_PRIV）。curated 開放建表列 TBD（T30），請接手 PM 依 A8 風險重新評估 | 2026-11-19 |
+| A12 | Row／column filter 維持待決（T5），補上 v0.12 的長期做法：以 OPA 外掛做 row filter／column mask，待 PoC（T27） | 2026-11-19 |
 
 ---
 

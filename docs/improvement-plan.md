@@ -120,10 +120,10 @@
 | 步驟 | 內容 | 為什麼放這裡 |
 |------|------|-------------|
 | 0 | **討論文件架構與要涵蓋的 topic**：讀者分層、目錄組織、topic 清單、每個 topic 對應的主文件（✅ 已定案，見 §8） | 後續每一步都依賴「哪個 topic 放哪份文件」 |
-| 1 | Workflow：SKILL.md、模板、README（加 PM 交接入口） | 依步驟 0 的架構寫規範 |
-| 2a | 依 §8 搬移目錄與改名（`git mv`）、更新內部連結，內容不動；順帶刪除英文版 `product-overview.en.md` | 合併內容要寫進新路徑，先搬再改，diff 只有路徑變化 |
-| 2b | 合併 Authorization PRD v0.12：依 §7.4 確認結果併入對應文件；新增 authorization、ha-dr、monitoring-alerting、web-console 骨架 | 會推翻部分舊決議，要在精簡前做，避免同一份文件改兩次 |
-| 3 | 新增 `decision-history.md`；精簡 `00-progress.md`；建立統一 TBD 清單（英文版已於 2a 刪除） | 合併後被推翻的舊決議一起移入 decision-history |
+| 1 | ✅ Workflow：SKILL.md、模板、README（加 PM 交接入口） | 依步驟 0 的架構寫規範 |
+| 2a | ✅ 依 §8 搬移目錄與改名（`git mv`）、更新內部連結，內容不動；順帶刪除英文版 `product-overview.en.md` | 合併內容要寫進新路徑，先搬再改，diff 只有路徑變化 |
+| 2b | ✅ 合併 Authorization PRD v0.12：依 §7.4 確認結果併入對應文件；新增 authorization、ha-dr、monitoring-alerting、web-console 骨架 | 會推翻部分舊決議，要在精簡前做，避免同一份文件改兩次 |
+| 3 | ✅ 新增 `decision-history.md`；精簡 `00-progress.md`；建立統一 TBD 清單（英文版已於 2a 刪除） | 合併後被推翻的舊決議一起移入 decision-history |
 | 4 | 修正 §1 中標「直接修」的矛盾；各文件瘦身（重複表格、空白段落、日期註記） | 此時內容已是最新 |
 | 5 | 回填 §2 review 的結論 | |
 

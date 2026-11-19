@@ -2,8 +2,6 @@
 
 公司內部 OLAP 平台（以 Apache Doris 為基礎）的文件庫，涵蓋服務設計、授權、資料寫入（ingestion）、營運支援與對外使用文件。
 
-> ⚠️ 目錄整理中：文件正依 [`improvement-plan.md`](docs/improvement-plan.md) 搬到下方新結構，搬移完成前部分連結會暫時失效。
-
 ## 從哪裡開始讀
 
 | 你是 | 先讀 | 接著讀 |

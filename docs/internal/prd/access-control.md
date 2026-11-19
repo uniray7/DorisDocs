@@ -13,7 +13,7 @@
 
 | 身分 | raw database | curated database |
 |------|--------------|------------------|
-| Service account | 只能讀（SELECT） | SELECT、INSERT、CREATE TABLE、DROP TABLE（TRUNCATE 同屬 `DROP_PRIV`）→ 開放建表是否安全見 TBD-30；ALTER 見 TBD-22 |
+| Service account | 只能讀（SELECT） | SELECT、INSERT、CREATE TABLE、DROP TABLE → 開放建表是否安全見 TBD-30；ALTER 見 TBD-22；TRUNCATE 所需權限待驗證（TBD-38） |
 | 平台 ingestion pipeline 帳號 | 寫入指定的 raw 表 | — |
 | 平台系統帳號 | 建表、改表、刪表、清空 | — |
 
@@ -44,10 +44,11 @@
 | 協定 | 定位 | 支援範圍 |
 |------|------|----------|
 | MySQL protocol | 互動式查詢、BI 工具連線、metadata 操作 | 完整 SQL（受權限約束），含 metadata SQL |
-| Arrow Flight SQL | 高吞吐欄式讀取（應用程式、資料處理框架大量拉資料） | 僅 SELECT 類 SQL；不支援 metadata SQL（如 `SHOW DATABASES`） |
+| Arrow Flight SQL | 高吞吐欄式讀取（應用程式、資料處理框架大量拉資料） | 目前只使用過 SELECT；DDL、DML、metadata SQL 的支援範圍待驗證（TBD-39） |
 
 - 兩者互補：探索 schema、寫入、管理操作用 MySQL protocol；大量讀取用 Arrow Flight SQL。
-- Curated 的寫入（`INSERT … SELECT`）只能走 MySQL protocol。
+- 官方 3.x 文件示範經 Arrow Flight SQL 執行 `CREATE TABLE`、`SHOW DATABASES`、`INSERT INTO`；4.1.4 是否相同、平台是否要限制只能 SELECT → TBD-39。
+- Arrow Flight SQL 的查詢結果由 client 直接向 BE 拉取；BE 不對外開放時，可在 `be.conf` 設 `public_host`、`arrow_flight_sql_proxy_port` 走反向代理（官方文件，2.1.8 起）。
 - Gateway（統一端點、QPS 計量，[RFC-002](../rfc/RFC-002-shared-cluster-resource-isolation.md)）以 MySQL protocol 為前提；Arrow Flight SQL 走 gRPC、資料面直連 BE，能否經 gateway、QPS 如何計量 → TBD-10。
 
 ## 行為規格
@@ -56,8 +57,8 @@
 |---|------|----------|
 | 1 | Managed service account 寫入或 DROP raw 表 | 權限錯誤 |
 | 2 | Managed service account 對 curated 表 `INSERT … SELECT` | 成功 |
-| 3 | Arrow Flight SQL 執行 metadata SQL | 不支援錯誤，需改走 MySQL protocol |
-| 4 | Arrow Flight SQL 執行非 SELECT 語句 | 拒絕 |
+| 3 | Arrow Flight SQL 執行 metadata SQL 或非 SELECT 語句 | 待驗證（TBD-39） |
+| 4 | Service account 對有寫入權的表執行 TRUNCATE | 待驗證（TBD-38）：若 source 為準，有 `LOAD_PRIV` 即可執行 |
 | 5 | 同一帳號經兩種協定連線 | 權限行為一致；metadata 隔離在兩種協定下皆成立 |
 
 ## 驗收標準

@@ -8,6 +8,8 @@
 > - **帳號模型**：workspace 內的資料存取一律透過向平台申請的 service account（見 [access-control.md](access-control.md)）；v0.12 以 owner、reader 的人員帳號描述，兩者如何對應 → TBD-24。
 > - **Console 申請頁、審核頁、開通狀態**：不採用。Workspace 申請與審核維持人工，核准後由平台透過 Web Console 的 Admin 後台執行開通（見 [web-console.md](web-console.md)）。v0.12 的「開通 workspace 與查看進度」一節未併入。
 > - **Managed curated 的 DDL**：執行身分為 service account；開放 CREATE／DROP 是否安全 → TBD-30。
+> - **TRUNCATE 所需權限**：v0.12 依 4.x 官方文件寫 `DROP_PRIV`，但 4.1.4 source 檢查的是 `LOAD_PRIV`，待實機驗證 → TBD-38。
+> - **Arrow Flight SQL 支援範圍**：目前只使用過 SELECT，其他語句待驗證 → TBD-39。
 
 ## 服務與授權範圍
 
@@ -103,10 +105,10 @@ Doris 4.x 官方 GRANT 文件所列的十項原生 privilege，供 Tool Team 設
 | Privilege | 在指定範圍內允許的行為 |
 |-----------|------------------------|
 | `SELECT_PRIV` | 讀取 table 或 view。Table 層級可讀整張表；column 層級只允許指定欄位。Owner 自助分享採 table 層級。 |
-| `LOAD_PRIV` | 資料寫入，涵蓋匯入、INSERT 與 DELETE 等。Raw pipeline 僅取得指定目標表的寫權。`INSERT … SELECT` 還需要來源表的讀權。 |
+| `LOAD_PRIV` | 資料寫入，涵蓋匯入、INSERT 與 DELETE 等。Raw pipeline 僅取得指定目標表的寫權。`INSERT … SELECT` 還需要來源表的讀權。4.1.4 source 中 TRUNCATE TABLE 檢查的也是 `LOAD_PRIV`（待驗證，TBD-38）。 |
 | `CREATE_PRIV` | 建立物件，例如在指定 database 建立 table 或 view。平台建立 database；managed 的建表範圍限於 curated database。 |
 | `ALTER_PRIV` | 變更既有物件，例如重新命名 table、增刪或修改 column、調整 partition。Managed curated 是否開放 ALTER 待決（TBD-22）。 |
-| `DROP_PRIV` | 刪除授權範圍內的物件。表級 `DROP_PRIV` 用於 DROP TABLE **和** TRUNCATE TABLE；database 級涉及 DROP DATABASE。規劃 curated 刪表權時須驗證層級。 |
+| `DROP_PRIV` | 刪除授權範圍內的物件。表級 `DROP_PRIV` 用於 DROP TABLE；database 級用於 DROP DATABASE。TRUNCATE TABLE：4.x 官方文件寫屬於 `DROP_PRIV`，與 4.1.4 source（`LOAD_PRIV`）不一致，待驗證（TBD-38）。Doris 沒有建立者擁有權，要讓帳號刪自己建的表只能授予 database 級 `DROP_PRIV`，會連帶允許 DROP DATABASE（見 [ddl-governance.md](ddl-governance.md)）。 |
 | `SHOW_VIEW_PRIV` | 用 SHOW CREATE VIEW 查看 view 定義；要查詢 view 的資料仍需 `SELECT_PRIV`。 |
 
 ### 授權管理與資源使用

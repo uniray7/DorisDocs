@@ -37,6 +37,7 @@
 ### Curated table（service account 直接執行）
 
 - Service account 在 curated database 可直接 CREATE／DROP／TRUNCATE TABLE，計入儲存配額。
+- **刪表會連帶刪庫的權限**：Doris 沒有建立者擁有權，建表不會自動授權給建立者。要讓 service account 刪自己建的表，只能授予 database 級 `DROP_PRIV`，而 DROP DATABASE 檢查的正是這個權限，等於也能刪掉整個 curated database。可行方向（待 TBD-30 討論）：接受並靠回收站與稽核兜底；DROP 改由平台執行；或建表後由平台補授表級 `DROP_PRIV`。
 - **待 PM 重新評估（TBD-30）**：開放直接建表會帶來下方「開放直接 DDL 的風險」。tier 1 是 shared cluster，FE 由多個 workspace 共用，一個 workspace 出錯會影響同 cluster 的所有租戶，風險高於 self-managed。
 
 ## Self-managed
@@ -52,7 +53,7 @@
 | B：指定的輸出 database | dbt 讀取來源、在指定 database 重建模型；可保護其他團隊依賴的表，平台須維護 database 用途及跨庫讀權 |
 
 - ALTER、RENAME 及 view 權限依實際模型確認。
-- Doris 的 TRUNCATE TABLE 與 DROP TABLE 都需要表級 `DROP_PRIV`，無法分開授權。若要分開管理，可評估由平台依操作類型代為執行，避免直接授予 `DROP_PRIV`。
+- DROP TABLE 需要表級 `DROP_PRIV`。TRUNCATE TABLE 所需權限：4.x 官方文件寫 `DROP_PRIV`，4.1.4 source 檢查的是 `LOAD_PRIV`，待實機驗證（TBD-38）。若以 source 為準，**有寫入權就能 TRUNCATE**，代建流程擋不住。
 - 執行身分、允許範圍與 dbt 操作方式 → TBD-23。
 
 ## 開放直接 DDL 的風險與可研究的防護
@@ -72,8 +73,7 @@
 
 | 防護 | 擋什麼 | 依據 |
 |------|--------|------|
-| Database 級 replica quota（`ALTER DATABASE … SET REPLICA QUOTA`） | 限制單一 database 的 replica 總數，替爆炸半徑設上限 | 官方 ALTER DATABASE 文件；預設約 10 億，需自行調低 |
-| Partition 數量上限 | 限制單次建立的 partition 數 | `max_dynamic_partition_num` 預設 500；auto partition 的上限待查 |
+| 調低 partition、bucket、replica quota 等上限參數 | 限制單表與單庫可建出的 tablet 數 | 見下方「防護參數」；4.1.4 預設值都很寬 |
 | `DROP … FORCE` 或縮短回收站保留時間 | 避免舊表在回收站累積 | 官方 Recycle Bin 文件；代價是誤刪無法救回 |
 | 限定 dbt 只寫指定的輸出 database（上表方案 B） | 把風險圈在單一 database，搭配 replica quota | — |
 | 平台提供 dbt 設定範本、macro（預設 partition、bucket）＋ CI 檢查 | 從源頭擋設定錯誤 | 組織面配套 |
@@ -82,9 +82,40 @@
 
 建議先在 4.1.4 實測：replica quota 是否有效擋下超量建表、FE heap 與 tablet 數的關係，再決定是否開放。
 
+### 防護參數（調整值待討論，TBD-40）
+
+下列 FE 參數的 4.1.4 預設值都很寬，平台必須主動調低；**調多少待討論**，下表說明每個參數擋什麼、為什麼要調。
+
+| 參數 | 4.1.4 預設 | 限制什麼 | 為什麼要調 |
+|------|-----------|----------|------------|
+| `max_auto_partition_num` | 20000 | Auto partition 表最多可有的 partition 數 | 錯誤的寫入或 dbt model 會自動長出大量 partition；每個 partition 乘上 bucket 與 replica 數就是 tablet，直接放大 FE metadata |
+| `max_dynamic_partition_num` | 20000 | Dynamic partition 一次可建的 partition 數 | 設錯 start／end 會一次建出大量 partition |
+| `max_multi_partition_num` | 4096 | 建表時批次建立 partition 的上限 | 一句 CREATE TABLE 就能建出數千個 partition |
+| `max_bucket_num_per_partition` | 768 | 使用者指定的單一 partition bucket 數 | bucket 過多是 tablet 爆炸的另一個來源；一般資料量不需要上百個 bucket（此參數改動需重啟 FE） |
+| `autobucket_max_buckets` | 128 | Auto bucket 自動決定的 bucket 上限 | 同上 |
+| `default_db_replica_quota_size` | 1073741824 | 新 database 預設的 replica 數上限；也可用 `ALTER DATABASE … SET REPLICA QUOTA` 逐庫設定 | 預設等於沒有限制。這是唯一能限制「單一 database 總 tablet 數」的手段，可擋住每張表都合規、加總卻失控的情況 |
+| `catalog_trash_expire_second` | 86400（1 天） | DROP 後在回收站保留多久 | 保留越久越能救回誤刪；但反覆重建的表會讓回收站累積大量 metadata，兩者要取捨 |
+
+**為什麼不能用預設值**：在預設值下，一張 auto partition 表理論上最多 20000 個 partition × 768 個 bucket × 3 個 replica，約 4,600 萬個 tablet replica，遠超過一座 cluster 的 FE 能承受的量。
+
+**決定數值時要考慮**：
+- 一座 cluster 的 FE heap 能承受多少 tablet（需在 4.1.4 實測）。
+- 正常業務需要的 partition 與 bucket 數（例如按天分區、保留 N 年的表需要幾個 partition）。
+- Shared 與 dedicated cluster 可能要不同的值：shared 的 FE 由多個 workspace 共用。
+- 這些是 cluster 全域設定，調低會影響該 cluster 所有使用者；超過上限時操作會直接失敗，對外文件要說明上限與失敗時的行為。
+
 ## 驗收標準
 
 - [ ] Managed service account 對 raw 無任何 DDL 權限
 - [ ] 命名檢核擋下全部違規樣態
 - [ ] 稽核紀錄可回溯：申請 → 核准 → 執行，含 DDL 全文與變更前 schema
 - [ ] 仍被 pipeline 寫入的 raw 表無法被誤刪
+
+## 參考來源
+
+- [L1] TruncateTableCommand.java（檢查 `LOAD_PRIV`）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/nereids/trees/plans/commands/TruncateTableCommand.java｜4.1.4｜2026-11-19
+- [L1] TRUNCATE TABLE 文件（寫 `Drop_priv`）｜https://raw.githubusercontent.com/apache/doris-website/master/versioned_docs/version-4.x/sql-manual/sql-statements/table-and-view/table/TRUNCATE-TABLE.md｜4.x｜2026-11-19
+- [L1] DropDatabaseCommand.java（database 級 `DROP_PRIV`）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/nereids/trees/plans/commands/DropDatabaseCommand.java｜4.1.4｜2026-11-19
+- [L1] Config.java（partition、bucket、replica quota、回收站參數預設值）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-common/src/main/java/org/apache/doris/common/Config.java｜4.1.4｜2026-11-19
+- [L1] status.h（`TOO_MANY_VERSION` = -235）｜https://raw.githubusercontent.com/apache/doris/4.1.4/be/src/common/status.h｜4.1.4｜2026-11-19
+- [L1] Built-in Authorization 文件（權限層級、無擁有權概念）｜https://raw.githubusercontent.com/apache/doris-website/master/versioned_docs/version-4.x/admin-manual/auth/authorization/internal.md｜4.x｜2026-11-19

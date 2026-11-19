@@ -20,7 +20,7 @@
 ### 2. Metadata 隔離
 - `SHOW DATABASES`、`information_schema`、`SHOW PROCESSLIST` 等不得洩漏其他 ws 的 database 名、table 名、查詢內容。
 - Doris 行為基礎：`SHOW DATABASES` 僅列出使用者有權限的 database（MySQL 相容行為）——以「不授權即不可見」達成 metadata 隔離。
-- ⚠️ 需驗證項（實作時逐一確認，文件先列為驗收條件）：
+- ⚠️ 需驗證項（TBD-18；實作時逐一確認，文件先列為驗收條件）：
   - `information_schema.tables` / `columns` 是否確實只回傳有權限的物件
   - `SHOW PROCESSLIST` / query audit 是否會露出他人 SQL（若會，需限制一般帳號使用）
   - 錯誤訊息是否可能洩漏他 ws 物件存在性（例如查詢不存在 vs 無權限的錯誤是否可區分）

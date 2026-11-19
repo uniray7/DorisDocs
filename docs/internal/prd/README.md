@@ -25,7 +25,7 @@
 | Quota | 分配給 workspace 的資源上限（儲存量、QPS、併發數等）。 | |
 | Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
 | Max QPS | Workspace 的查詢速率上限，以**滑動窗口平均（5 分鐘）**計量判定超標。 | 瞬間爆量由 resource group 併發限制兜底，不直接判超標 |
-| 查詢協定 | 平台提供兩種查詢介面：**MySQL protocol**（完整 SQL，含 metadata SQL）與 **Arrow Flight protocol**（僅 SELECT 相關 SQL，不支援 metadata SQL 如 `SHOW DATABASES`）。 | 共用同一權限體系；細節見 access-control spec |
+| 查詢協定 | 平台提供兩種查詢介面：**MySQL protocol**（完整 SQL，含 metadata SQL）與 **Arrow Flight SQL**（目前只使用過 SELECT；其他語句的支援範圍待驗證，TBD-39）。 | 共用同一權限體系；細節見 access-control spec |
 | Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校）的服務模式。寫入 raw 一律走平台 pipeline；raw table 由平台建立（建表前是否審核 schema：TBD-7），curated table 由 service account 直接建立（TBD-30）。 | 申請時選定，**不可事後轉換** |
 | Self-managed 模式 | 使用者自行管理資料的服務模式：可自行灌資料（自建 pipeline）；database 由平台建立，table DDL 目前一律提交平台代建，是否因 dbt 開放直接 DDL 待定（TBD-29）。平台責任限縮為日常 infra 告警與代操作（scale in/out，目前無付費機制）；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）提 request 由 PM 排優先權，非平台義務。**限定 dedicated cluster（tier 2+）**。 | 平台不負資料管理責任；不可用平台 pipeline |
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |

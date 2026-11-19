@@ -13,7 +13,7 @@
 | 儲存用量 | Doris **壓縮後實際占用**（含副本 ⚠️ 待確認：配額計單副本或全副本） | [decision-history](../../decision-history.md) |
 | 儲存計入範圍（managed） | raw + curated + **corrupted data + batch landing 殘留** | streaming/batch spec 行為規格 |
 | QPS | **5 分鐘滑動窗口平均**判超標；瞬間爆量由 workload group 併發兜底 | [decision-history](../../decision-history.md) |
-| QPS 資料來源 | **Gateway 計量**（RFC-002 第 1 層）；與 Doris audit log 對賬。⚠️ Arrow Flight 查詢的計量路徑待 RFC-002 驗證（gateway 以 MySQL protocol 為前提） | RFC-002 |
+| QPS 資料來源 | **Gateway 計量**（RFC-002 第 1 層）；與 Doris audit log 對賬。⚠️ Arrow Flight 查詢的計量路徑待 RFC-002 驗證（TBD-10）（gateway 以 MySQL protocol 為前提） | RFC-002 |
 
 ## 使用者可見內容（Web Console 儀表板）
 

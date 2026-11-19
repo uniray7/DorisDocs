@@ -52,7 +52,7 @@
 | 07-13 | Managed DDL 治理 | 方案 A（ws owner approve）／方案 B（平台審核）並列待決 | 同日「DDL 審核精緻化」 | 已取代：11-19 raw 由平台建、curated 由 service account 建 | uniray7 |
 | 07-14 | Self-managed 支援邊界 | 平台常態只負責 infra 告警；其他需求提 request 給 PM 排優先權，非義務 | — | 有效 | uniray7 |
 | 07-14 | 無付費機制 | 平台目前沒有任何付費機制，代操作與諮詢不收費 | 先前的付費選配說法 | 有效 | uniray7 |
-| 07-14 | 查詢協定 | MySQL protocol（完整 SQL）＋ Arrow Flight（僅 SELECT 類） | — | 有效 | uniray7 |
+| 07-14 | 查詢協定 | MySQL protocol（完整 SQL）＋ Arrow Flight（僅 SELECT 類） | — | 部分修正：11-19 查核發現官方文件示範 Arrow Flight 可執行 DDL／INSERT；團隊目前只用過 SELECT，支援範圍待驗證（TBD-39） | uniray7 |
 | 07-14 | Self-managed HA | 兩座 cluster active-standby＋CCR best-effort 同步＋failover 時平台介入 | — | 已取代：11-19 改為 3 replica | uniray7 |
 | 07-14 | Row／column filter | Self-managed 使用者要求對指定 table 做 row filtering／column masking；承接與否未決 | — | 待決（TBD-5） | uniray7 |
 | 07-14 | CCR 同步層級 | CCR 為 cluster 層級全同步 | — | 已取代：11-19 不採用 CCR 做 HA | uniray7 |

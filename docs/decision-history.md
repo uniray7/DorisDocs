@@ -21,7 +21,7 @@
 | Self-managed dbt 直接 DDL | 需團隊討論；擔憂過多或過碎的 partition 造成 FE 記憶體壓力甚至 cluster crash，風險與防護寫在 `prd/ddl-governance.md` | 07-17：dbt 需求正式提出才啟動放寬預案 | 待決（TBD-29） | uniray7 |
 | Row／column filter | 長期方向：以 OPA 外掛實作，待 PoC | — | 待決（TBD-5、TBD-27） | uniray7 |
 | HA | Cluster 部署在多台機器、每個 table 3 個 replica，單一機器故障可容錯；中長期分散到 3 個機櫃或 3 個 datacenter | 07-14：self-managed 雙 cluster active-standby＋CCR＋failover | 有效（中長期做法 TBD-9） | uniray7 |
-| DR | 未來需要 backup／restore 到 S3 或 MinIO | — | 有效（設計 TBD-36） | uniray7 |
+| DR | 未來需要 backup／restore 到 S3 或 MinIO；self-managed 的備份不再作為 RFC-003 子決策，一併由 DR 規劃 | 07-16：self-managed 暫定不提供備份（RFC-003 子決策甲） | 有效（設計 TBD-36） | uniray7 |
 | 資料搬遷 | 獨立成 `prd/data-migration.md`；CCR 從 tier 遷移流程拿掉，改列為候選做法之一 | cluster-tiering：tier 1→2「優先評估 CCR／backup-restore」 | 有效（做法 TBD-35） | uniray7 |
 
 ## 2026-07-12 ～ 07-17：PRD 細化期
@@ -58,7 +58,7 @@
 | 07-14 | CCR 同步層級 | CCR 為 cluster 層級全同步 | — | 已取代：11-19 不採用 CCR 做 HA | uniray7 |
 | 07-16 | Self-managed DDL 代建 | Database 與 table DDL 一律「提交 → 驗證 → 平台代建」並注入保護性設定，不驗 schema 設計 | 07-13：self-managed 開通後改表不經平台 | 有效 | uniray7 |
 | 07-16 | Self-managed 治理形態 | 三選項（固定三庫／命名規則／表單宣告制）交 manager 決策，團隊建議表單宣告制 | — | 待決（TBD-8） | uniray7（待 manager） |
-| 07-16 | Self-managed 備份還原 | 暫定不提供；誤刪不救援、明文免責，以 DDL 申請紀錄＋audit log 舉證 | — | 待決（TBD-8；DR 方向見 11-19） | uniray7（待 manager） |
+| 07-16 | Self-managed 備份還原 | 暫定不提供；誤刪不救援、明文免責，以 DDL 申請紀錄＋audit log 舉證 | — | 已取代：11-19 移出 RFC-003，改由 DR 規劃（TBD-36） | uniray7 |
 | 07-16 | Table DDL 直接執行 | 因 dbt 需求，table DDL 改為直接打 Doris，只有 database 代建 | 同日「DDL 代建」的 table 部分 | 已取代：同日改雙軌制 | uniray7 |
 | 07-16 | Table DDL 雙軌制 | 平台代建（有保護、有責任）與自建（零責任）並存 | 同日「Table DDL 直接執行」 | 已取代：07-17 改回全代建，雙軌制降為放寬預案 | uniray7 |
 | 07-16 | Cluster 穩定性責任框架 | 四層防線：代建攔截、上限封頂、巡檢偵測、恢復＋緊急介入權；承諾「弄不沉、劣化會叫、沉了會救、誰弄的有證據」，不保證不變慢 | — | 有效（CCR lag 相關描述已隨 11-19 移除） | uniray7 |

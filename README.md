@@ -8,7 +8,7 @@
 |------|------|--------|
 | 管理層 | [產品摘要](docs/product-overview.md) | [RFC](docs/internal/rfc/) 的決策簡報 |
 | PM | [現況與 TBD 清單](docs/00-progress.md) | [PRD 總覽](docs/internal/prd/README.md) → [決議演進](docs/decision-history.md) |
-| 工程師 | [PRD 總覽](docs/internal/prd/README.md) | 各 feature 文件 → [RFC](docs/internal/rfc/) → [架構](docs/internal/architecture/) |
+| 工程師 | [PRD 總覽](docs/internal/prd/README.md) | 各 feature 文件 → [RFC](docs/internal/rfc/) → 架構文件（`docs/internal/architecture/`，階段 5 產出） |
 | 平台使用者 | [對外文件](docs/external/)（階段 5 產出） | — |
 
 ## 目錄

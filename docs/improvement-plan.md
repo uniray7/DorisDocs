@@ -46,15 +46,15 @@
 | # | 議題 | 關聯 | 我的建議 |
 |---|------|------|----------|
 | R0 | **7/18 之後有沒有新決議？**（文件停在 7/18，現在 11/19）例如 RFC-003、方案 A/B 是否已拍板。已知新資料：Authorization PRD v0.12（11/16），衝突見 §7 | 全部 | 先處理 §7，再做其他批次 |
-| R1 | Self-managed 要不要過 staging | C4 | 不強制（self-managed 不審技術內容，staging 對它意義小），改為選配 |
+| R1 | Self-managed 要不要過 staging | C4 | ✅ 決議：managed 必經，self-managed 選配 |
 | R2 | HA 是否適用 managed；預設或選配 | C7 | 先寫「managed HA：TBD」，不要在 overview 先承諾 |
 | R3 | tmp 是 database 還是 table、命名規則 | C9 | 列 TBD 給工程師；文件先統一成一種說法 |
-| R4 | 初期哪些作業人工、哪些有 console/API | C10 | spec 裡的 API 段落改標「目標設計（實作時程 TBD）」，不刪 |
+| R4 | 初期哪些作業人工、哪些有 console/API | C10 | ✅ 決議：PRD 不保留 API 段落，由實作的工程師決定 |
 | R5 | 80% 用量預警由誰計算 | journey 斷點 2 | quota-and-usage 計算、cluster-tiering 只收事件 |
-| R6 | 佈建時建的初始 raw 表要不要補稽核紀錄 | journey 提醒 1 | 要，回寫一筆 DDL 申請紀錄 |
+| R6 | 佈建時建的初始 raw 表要不要補稽核紀錄 | journey 提醒 1 | ✅ 決議：要，回寫一筆 DDL 申請紀錄 |
 | R7 | Self-managed DDL 代建「初期人工」走什麼管道、時效多久 | RFC-003 §8 | 列 TBD（PM 定管道，工程師估時效） |
-| R8 | `managed-service-journey.md` 的去留 | §3 | 斷點處理完後併入 PRD，刪檔 |
-| R9 | `authorization.md`、`access-control.md`、`ddl-governance.md` 尚未定稿（2b-1 合併後的版本），需再討論 | §7 | 步驟 2–4 完成後安排一輪討論 |
+| R8 | `managed-service-journey.md` 的去留 | §3 | ✅ 決議：搬到 `prd/managed-user-journey.md`，改寫為 managed 申請與使用旅程 |
+| R9 | `authorization.md`、`access-control.md`、`ddl-governance.md` 尚未定稿（2b-1 合併後的版本），需再討論 | §7 | ✅ 決議：交接前安排一輪討論 |
 
 ---
 
@@ -85,7 +85,7 @@
 | T5 | Row/column filter 是否由平台提供 | PM＋工程師 | open #3 |
 | T6 | PII／機敏資料的平台責任範圍 | PM＋Security | open #5 |
 | T7 | Managed raw table 由平台建，建表前是否需平台審核 schema（取代原方案 A／B，見 A5） | PM／管理層 | open #7 |
-| T8 | Self-managed DDL 治理形態 Option 1/2/3、備份甲／乙 | Manager | RFC-003 |
+| T8 | Self-managed DDL 治理形態 Option 1/2/3（備份子決策已移出，改由 T36） | Manager | RFC-003 |
 | T9 | HA 中長期做法：機器與 replica 分散到 3 個機櫃或 3 個 datacenter；可用性目標與 RPO/RTO | PM＋工程師 | ha-dr |
 | T10 | Arrow Flight 能否經 gateway、QPS 怎麼計量 | 工程師 | RFC-002 |
 | T11 | 初始帳號不含 GRANT_PRIV 的可行性 | 工程師 | RFC-003 §11 |
@@ -124,8 +124,8 @@
 | 2a | ✅ 依 §8 搬移目錄與改名（`git mv`）、更新內部連結，內容不動；順帶刪除英文版 `product-overview.en.md` | 合併內容要寫進新路徑，先搬再改，diff 只有路徑變化 |
 | 2b | ✅ 合併 Authorization PRD v0.12：依 §7.4 確認結果併入對應文件；新增 authorization、ha-dr、monitoring-alerting、web-console 骨架 | 會推翻部分舊決議，要在精簡前做，避免同一份文件改兩次 |
 | 3 | ✅ 新增 `decision-history.md`；精簡 `00-progress.md`；建立統一 TBD 清單（英文版已於 2a 刪除） | 合併後被推翻的舊決議一起移入 decision-history |
-| 4 | 修正 §1 中標「直接修」的矛盾；各文件瘦身（重複表格、空白段落、日期註記） | 此時內容已是最新 |
-| 5 | 回填 §2 review 的結論 | |
+| 4 | ✅ 修正 §1 中標「直接修」的矛盾；各文件瘦身（重複表格、空白段落、日期註記） | 此時內容已是最新 |
+| 5 | ✅ 回填 §2 review 的結論（RFC-003 精簡另行討論） | |
 
 ---
 
@@ -228,6 +228,7 @@ docs/
       self-managed-operations.md
       ha-dr.md                    ← 新增骨架
       data-migration.md           ← 新增（資料搬遷）
+      managed-user-journey.md ← 原 managed-service-journey.md，改寫為 managed 申請與使用旅程
       monitoring-alerting.md      ← 新增骨架
       web-console.md              ← 新增骨架（Tool Team 的 Console 總覽）
     rfc/
@@ -236,7 +237,7 @@ docs/
       RFC-003-decision-brief.md
     architecture/                 Phase 8
       system-architecture.md
-      data-flow.md                ← managed-service-journey.md 併入
+      data-flow.md
   external/                       Phase 8（對外文件）
 ```
 
@@ -265,6 +266,7 @@ docs/
 | 配額與用量 | `prd/quota-and-usage.md` | 現有 |
 | HA／DR | `prd/ha-dr.md` | 新增骨架 |
 | 資料搬遷 | `prd/data-migration.md` | 新增 |
+| Managed 申請與使用旅程 | `prd/managed-user-journey.md` | 搬移＋改寫 |
 | 監控告警 | `prd/monitoring-alerting.md` | 新增骨架 |
 | Web Console | `prd/web-console.md` | 新增骨架 |
 | Self-managed 營運支援 | `prd/self-managed-operations.md` | 現有 |

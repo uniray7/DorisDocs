@@ -17,9 +17,9 @@
 | # | 情境 | 預期行為 |
 |---|------|----------|
 
-## API 與狀態機（如適用）
-- Endpoint、request／response、錯誤碼
-- 狀態機，例如：`SUBMITTED → APPROVED → PROVISIONING → ACTIVE`
+## 狀態機（如適用）
+- 例如：`SUBMITTED → APPROVED → PROVISIONING → ACTIVE`
+- API 設計不寫在 PRD，由實作的工程師決定
 
 ## 與其他功能的依賴
 - 依賴誰、被誰依賴（用連結）

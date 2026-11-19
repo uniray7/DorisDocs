@@ -10,7 +10,7 @@
 | 使用者 | 後端工程師為主（會寫 SQL），多來自 lakehouse 環境 |
 | 租戶與拓撲 | 租戶單位為 workspace，綁定成本中心。Workspace 至少使用兩個 fab，每個 fab 各自提供相同數量、彼此獨立的 Doris 服務，不跨 fab 部署。Tier 1 為 shared cluster，tier 2 起為 dedicated（[cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md)） |
 | 服務模式 | Managed（平台承擔資料管理責任，寫入只走平台 pipeline）與 self-managed（使用者自建 pipeline、自負資料責任，限 dedicated）；申請時選定、不可轉換。對照表見 [PRD](internal/prd/README.md) |
-| 申請與開通 | 人工：投影片 template＋每週三申請會議＋追蹤表。核准後先過 staging 小規格試用，再由平台透過 Web Console 的 Admin 後台開通 |
+| 申請與開通 | 人工：投影片 template＋每週三申請會議＋追蹤表。核准後 managed 先過 staging 小規格試用（self-managed 選配），再由平台透過 Web Console 的 Admin 後台開通 |
 | 資料寫入 | Managed：平台 streaming（三種固定 CDC format）與 batch pipeline 寫入 raw；tmp zone 已取消，流程待改寫（TBD-28）。Self-managed：自建 pipeline |
 | DDL | Database 由平台建立。Managed：raw 由平台建立，curated 由 service account 直接建立。Self-managed：table 一律平台代建（[ddl-governance.md](internal/prd/ddl-governance.md)） |
 | 帳號與授權 | Doris user、role、密碼全由平台管理；資料存取一律透過 service account；查詢協定為 MySQL 與 Arrow Flight SQL（[access-control.md](internal/prd/access-control.md)、[authorization.md](internal/prd/authorization.md)） |
@@ -41,7 +41,7 @@
 | [web-console.md](internal/prd/web-console.md) | 2 Feature 細化 | 草稿（骨架） | 16、28、32、34 |
 | [RFC-002](internal/rfc/RFC-002-shared-cluster-resource-isolation.md) | 4 定案 | 評審中（待會簽） | 10 |
 | [RFC-003](internal/rfc/RFC-003-self-managed-ddl-governance-and-rr.md)＋[決策簡報](internal/rfc/RFC-003-decision-brief.md) | 4 定案 | 評審中（待 manager） | 8、11、29 |
-| [managed-service-journey.md](internal/architecture/managed-service-journey.md) | 5 產出 | 草稿（去留待定） | — |
+| [managed-user-journey.md](internal/prd/managed-user-journey.md) | 2 Feature 細化 | 草稿 | 1、7、28、30–35 |
 
 階段 1 已完成；階段 2 的 feature 文件都有草稿，邊界審查尚未進行；階段 3（NFR 與治理）、5（架構與對外文件）尚未開始。
 
@@ -58,7 +58,7 @@
 | TBD-5 | Row／column filter 是否由平台提供（長期方向：OPA） | PM＋工程師 | 無 | authorization | 未開始 |
 | TBD-6 | PII／機敏資料的平台責任範圍 | PM＋Security | prd/README 治理章節 | prd/README | 未開始 |
 | TBD-7 | Managed raw table 建表前是否需平台審核 schema | PM／管理層 | 無 | ddl-governance | 未開始 |
-| TBD-8 | Self-managed database 組織方式（固定三庫／命名規則／表單宣告）、備份與否 | Manager | 無 | RFC-003 | 研究中 |
+| TBD-8 | Self-managed database 組織方式（固定三庫／命名規則／表單宣告） | Manager | 無 | RFC-003 | 研究中 |
 | TBD-9 | HA 中長期做法：分散到 3 機櫃或 3 datacenter；可用性目標、RPO／RTO | PM＋工程師 | 無 | ha-dr | 未開始 |
 | TBD-10 | Arrow Flight SQL 能否經 gateway、QPS 怎麼計量 | 工程師 | 無 | RFC-002 | 未開始 |
 | TBD-11 | 使用者帳號不含 `GRANT_PRIV` 的技術驗證 | 工程師 | 無 | access-control | 未開始 |
@@ -88,6 +88,18 @@
 | TBD-35 | 資料搬遷做法、流程、回退；換服務模式時由誰搬 | 工程師＋PM | 無 | data-migration | 未開始 |
 | TBD-36 | DR：backup／restore 到 S3 或 MinIO 的範圍、頻率、保留期、還原流程與演練 | 工程師＋PM | 無 | ha-dr | 未開始 |
 | TBD-37 | Nomad 由 1.11.1 升級到 1.11.3（sticky 相關 bug）：以 L2 release notes 確認是否已修正、評估升級影響 | 工程師 | 無 | cluster-topology-and-tiering | 研究中 |
+
+## 各文件的細項待確認
+
+> 只影響單一文件的細項（數值、流程細節）留在該文件的「待確認事項」，這裡只放連結；跨文件或需要決策的才登記為 TBD。
+
+| 文件 | 細項 |
+|------|------|
+| [cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md#待確認事項) | 升級由誰觸發、持續超標天數 |
+| [staging-validation.md](internal/prd/staging-validation.md#待確認事項) | 租借期限與延長政策 |
+| [quota-and-usage.md](internal/prd/quota-and-usage.md#待確認事項) | self-managed 是否納入 tier 計量、用量資料保留時長 |
+| [self-managed-operations.md](internal/prd/self-managed-operations.md#待確認事項) | scale 申請流程與緊急擴容、PM request 的提交形式 |
+| [batch-ingestion.md](internal/prd/batch-ingestion.md#待確認假設清單脈絡傾倒待補) | 6 項預設假設（整體見 TBD-12） |
 
 ## 試點回饋（階段 5）
 

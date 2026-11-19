@@ -82,30 +82,6 @@ curated zone（免審）
 | 7 | tmp zone 清理 | 平台依 retention 政策清理已 merge 的 tmp 資料（與 streaming 同一政策，TBD-15） |
 | 8 | 配額 | landing + tmp + corrupted data 占用計入 ws 儲存配額；批次匯入吞吐受 shared cluster 寫入側治理（RFC-002 第 4 層：錯峰排程、批次大小治理） |
 
-## API 邏輯
-
-> 與 streaming pipeline 的 API 同一資源風格；平台內部可共用 job 管理框架。
-
-| Method | Path | 說明 |
-|--------|------|------|
-| POST | `/api/v1/workspaces/{ws}/batch-jobs` | 建立 job（來源類型、格式、schema 宣告）→ 回 landing 路徑/憑證 |
-| GET | `/api/v1/workspaces/{ws}/batch-jobs` | 列出 jobs 與狀態 |
-| PATCH | `/api/v1/workspaces/{ws}/batch-jobs/{id}` | 暫停/恢復/更名/改排程 |
-| DELETE | `/api/v1/workspaces/{ws}/batch-jobs/{id}` | 停用（landing 憑證回收、tmp 保留至 retention 到期） |
-| POST | `/api/v1/workspaces/{ws}/batch-jobs/{id}/runs` | 手動觸發一次匯入 |
-| GET | `/api/v1/workspaces/{ws}/batch-jobs/{id}/runs` | 批次執行紀錄（含每檔結果） |
-| PUT | `/api/v1/workspaces/{ws}/batch-jobs/{id}/merge-sql` | 提交/更新 merge SQL（含排程） |
-| GET | `/api/v1/workspaces/{ws}/batch-jobs/{id}/corrupted-data` | 瀏覽 corrupted data 樣本 |
-
-### 錯誤碼
-| HTTP | 錯誤碼 | 情境 |
-|------|--------|------|
-| 422 | `WS_NOT_MANAGED` | self-managed ws 嘗試建 batch job |
-| 422 | `RAW_TABLE_NOT_APPROVED` | merge SQL 目標不是經 DDL 治理流程核准建立的 raw table |
-| 422 | `MERGE_SQL_SCOPE_VIOLATION` | merge SQL 讀寫範圍超出「讀 tmp 寫 raw（同 ws）」 |
-| 409 | `JOB_LIMIT_REACHED` | 超過 ws 的 batch job 數量上限（上限值 TBD-15） |
-| 409 | `RUN_ALREADY_IN_PROGRESS` | 前一批尚未完成時手動觸發（不允許併發 run） |
-
 ## 與其他功能的依賴關係
 - 目標 raw table 需先經 **ddl-governance** 流程（治理方案 A/B 待決 → 平台系統執行）建立。
 - Landing/corrupted data 路徑、tmp table 的 per-ws 隔離依 **workspace-isolation**；寫入側治理參數依 **RFC-002**。

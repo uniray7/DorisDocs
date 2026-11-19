@@ -19,24 +19,14 @@
 
 這是整個產品最核心的設計——**責任邊界以服務模式劃分**，申請時選定、**不可事後轉換**：
 
-| | **Managed** | **Self-managed** |
-|---|---|---|
-| 適合對象 | 想省事、接受平台規範的團隊 | 高客製需求、大流量、有能力自管的團隊 |
-| 資料寫入 | 只走平台 pipeline（streaming CDC / batch） | 一律自建 pipeline 自行寫入 |
-| 建表/改表 | Database 由平台建立；raw table 由平台建立（建表前是否審核：TBD-7）；curated table 由 service account 直接建立（是否安全待評估：TBD-30） | Database 由平台建立；table **一律提交平台代建**（驗證＋保護性設定注入，不審 schema 設計）；是否因 dbt 開放直接建表待定（TBD-29） |
-| 資料管理責任 | **平台承擔**：備份還原、保留清除、效能調校 | **使用者自負** |
-| 平台支援 | 完整 | 日常 infra 告警 + 代操作（scale in/out）；其他需求提 request 由 PM 排優先權（非義務） |
-| 可用規格 | Shared 或 Dedicated cluster | 限 Dedicated cluster（tier 2 起） |
-| 帳號 | Doris user、role、密碼全由平台管理；資料存取一律透過 service account | 同左 |
+- **Managed**：適合想省事、接受平台規範的團隊；平台承擔資料管理責任，寫入只走平台 pipeline，可用 shared 或 dedicated cluster。
+- **Self-managed**：適合高客製、大流量、有能力自管的團隊；使用者自建 pipeline、自負資料責任，限 dedicated cluster。
+
+兩種模式在審查、開通、寫入、DDL、責任、支援上的完整對照見 [PRD §7](internal/prd/README.md#7-多租戶與資源隔離模型)。
 
 ## 三、資源分級（Tier）
 
-| Tier | 資料量 | 峰值 QPS | 配置 | 可用模式 |
-|------|--------|----------|------|----------|
-| 1 | < 500GB | < 20 | 共用 cluster（資源隔離） | 僅 managed |
-| 2 | 500GB–5TB | 20–100 | 專屬小型 cluster（3 BEs） | 兩者皆可 |
-| 3 | 5TB–30TB | 100–500 | 專屬中型 cluster（5–10 BEs） | 兩者皆可 |
-| 超過 | >30TB 或 >500 QPS | — | **個案洽談（處理方式待定）** | — |
+Tier 1 為 shared cluster（僅 managed），tier 2 起為 dedicated；超過 tier 3 個案洽談（TBD-2）。各 tier 的資料量、QPS 門檻與配置見 [cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md#tier-定義草案)。
 
 > ⚠️ 門檻數字為草案。「資料量與 QPS 綁死在同一 tier」已知不合理（例：資料小但查詢重的團隊無法歸類），已規劃 RFC 討論儲存/運算解耦。
 
@@ -46,7 +36,7 @@
 
 ```
 填投影片 template → 每週三申請會議報告 → 審核（按模式分軌，見下）
-  → Staging 試用環境驗證（小規格，驗設計不驗效能）→ 平台佈建正式環境 → 上線
+  → Staging 試用環境驗證（managed 必經、self-managed 選配；小規格，驗設計不驗效能）→ 平台佈建正式環境 → 上線
 ```
 
 - **Self-managed 審查**：僅需管理層成本核准；通過即開 cluster + monitor/alert/log。
@@ -87,7 +77,7 @@
 | TBD-6 | **PII/機敏資料的平台責任範圍** | 影響審核流程與合規成本 | 治理審查階段 |
 | TBD-7 | **Managed raw 建表是否需平台審核 schema**（curated 已改由 service account 直接建立） | 審核可控品質，但增加平台人力；不審則品質責任在使用者 | PM／管理層決定 |
 | TBD-20 | **時程與首個目標部門** | 目前皆未定 | 越早越好 |
-| TBD-8 | **Self-managed 的 DDL 治理形態與資料管理 R&R**（RFC-003 已成文） | 前提已定：DDL 一律平台代建（先緊縮後放寬，dbt 需求出現再議）。待決：治理形態 Option 1/2/3（團隊建議 3：表單宣告制）＋備份甲/乙（暫定甲：不提供、明文免責＋audit log 舉證） | **Manager 決策**，RFC-003 為決策文件 |
+| TBD-8 | **Self-managed 的 DDL 治理形態與資料管理 R&R**（RFC-003 已成文） | 前提已定：DDL 一律平台代建（先緊縮後放寬，dbt 需求出現再議）。待決：database 組織方式 Option 1/2/3（團隊建議 3：表單宣告制）；備份改由 DR 規劃（TBD-36） | **Manager 決策**，RFC-003 為決策文件 |
 | TBD-29／30 | **是否開放直接建表**：self-managed 因 dbt 直接 CREATE／DROP、managed curated 由 service account 直接建表 | 過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash；shared cluster 上影響所有租戶。風險與可研究的防護見 `internal/prd/ddl-governance.md` | 開放前 |
 | TBD-31 | **跨 workspace 分享**：owner 可否分享 table 讀取權給其他 workspace | 與原本「不支援」的定位相反，影響隔離設計與對外溝通 | 對外文件前 |
 

@@ -12,7 +12,7 @@
 ## 目前的 DR 方向
 
 - 未來需要 **backup／restore 機制，備份存放到 S3 或 MinIO**。
-- 範圍、頻率、保留期、還原流程與演練、managed 與 self-managed 是否都提供（self-managed 目前暫定不提供，[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) §5，待 manager 決策）→ TBD-36。
+- 範圍、頻率、保留期、還原流程與演練、managed 與 self-managed 是否都提供 → TBD-36。
 - 同一套 backup／restore 也是資料搬遷的候選做法（[data-migration.md](data-migration.md)）。
 
 ## 為什麼需要 HA（High Availability）

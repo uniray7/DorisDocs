@@ -50,16 +50,6 @@
 - 平台管理員看全 cluster/全 ws 匯總：容量水位（硬體採購依據）、各 ws 用量排名、超標事件、shared cluster 的 workload group 指標（RFC-002 監控項）。
 - 此視角同時服務計費報表（chargeback/showback，TBD-3）。
 
-## API 邏輯
-
-| Method | Path | 說明 |
-|--------|------|------|
-| GET | `/api/v1/workspaces/{ws}/quota` | 配額與目前用量摘要 |
-| GET | `/api/v1/workspaces/{ws}/usage/storage` | 儲存明細（zone/database/時間序列） |
-| GET | `/api/v1/workspaces/{ws}/usage/qps` | QPS 時間序列與超標事件 |
-| GET | `/api/v1/workspaces/{ws}/queries/slow` | 慢查詢/被 kill 查詢清單（僅本 ws） |
-| PUT | `/api/v1/workspaces/{ws}/alerts` | 自訂告警門檻設定 |
-
 ## 與其他功能的依賴關係
 - 80% 預警與超標處理政策：**cluster-topology-and-tiering**。
 - QPS 計量來源與 kill 事件：**RFC-002**（gateway、workload schedule policy）。
@@ -68,7 +58,7 @@
 - 配額數值、refresh 週期、計費模式：TBD-15。
 
 ## 待確認事項
-1. 儲存配額計單副本還是全副本（影響使用者理解的「可用空間」）。
+1. 儲存配額計單副本還是全副本（TBD-19）。
 2. Self-managed 是否納入 tier 計量展示與超標政策。
 3. 達 100% 的處置（限流 vs 擋寫入）與「超標但不願升級」——TBD-4。
 4. 用量資料保留時長（時間序列存多久）。

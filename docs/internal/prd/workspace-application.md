@@ -43,8 +43,8 @@
 - 狀態追蹤：以人工維護的申請追蹤表為準（欄位對應下方狀態機）。
 
 ### 佈建與交付
-- Staging 測試通過後，由平台人員透過 Web Console 的 Admin 後台執行佈建（每個申請的 fab 各一套）：
-  - Tier 1（必為 managed）：在 shared cluster 建立 raw／curated databases（`{ws}__{user_defined}__raw`／`__curated`）+ resource group + service account；申請投影片附的 schema 作為 raw 初始建表由平台執行（是否需審核 → TBD-7）
+- Staging 測試通過後（self-managed 未租借 staging 則於核准後），由平台人員透過 Web Console 的 Admin 後台執行佈建（每個申請的 fab 各一套）：
+  - Tier 1（必為 managed）：在 shared cluster 建立 raw／curated databases（`{ws}__{user_defined}__raw`／`__curated`）+ resource group + service account；申請投影片附的 schema 作為 raw 初始建表由平台執行（是否需審核 → TBD-7），並回寫一筆 DDL 申請紀錄（來源標記為 workspace 申請），讓 schema 版本歷史從第一天就完整
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
   - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + database + service account（database 命名 → TBD-8）
   - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間
@@ -76,7 +76,7 @@ SUBMITTED                               （投影片提交，排入最近的週�
   → CHANGES_REQUESTED ──(補件，下次會議再報)──→ UNDER_REVIEW
   → REJECTED                            （終態，附原因；可再申請）
   → APPROVED
-  → STAGING_PROVISIONED                 （staging 試用環境租借給申請者：固定小規格，不隨 tier 調整）
+  → STAGING_PROVISIONED                 （staging 試用環境租借給申請者：固定小規格；managed 必經，self-managed 選配，不租借則直接進 PROVISIONING）
   → STAGING_TESTING                     （申請者灌測試資料試用：自產假資料或自 production lakehouse 匯入）
   → TEST_REPORT_REVIEW                  （平台審核試用報告：schema/查詢設計合理性；效能數據僅供參考）
       ├─ 未達標 → STAGING_TESTING       （調整 schema/規模預估後重測；必要時退回 UNDER_REVIEW 改 tier）
@@ -107,7 +107,7 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 > 申請量成長到人工會議吃不消時，再依上方狀態機實作自助申請入口與 API；屆時投影片欄位即表單欄位、檢核清單即驗證規則。本期不做。
 
 ## 與其他功能的依賴關係
-- 正式佈建前依賴 **Staging 驗證**（staging-validation.md）的測試報告通過。
+- 正式佈建前依賴 **Staging 驗證**（staging-validation.md）的測試報告通過（managed 必經，self-managed 選配）。
 - 佈建動作依賴 **多租戶隔離**（database/resource group 建立）與 **Cluster tier 分配**（tier 判定規則）。
 - Managed 申請時審核的 schema 即 raw zone 初始建表，後續增修表走 **Database/Table 申請流程**（ddl-governance.md）。
 - 交付的 service account 依賴 **帳號模型**（access-control.md）。

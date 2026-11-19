@@ -21,14 +21,14 @@
 
 - 申請已達 `APPROVED` 狀態（按模式完成審查：self-managed 成本核准；managed 規模審查定 shared/dedicated）。
 - Staging 為**固定小規格的試用環境**，不隨目標 tier 調整；多個申請者可能共用 staging 資源（隔離方式比照 shared cluster）。
-- 兩種服務模式都要通過 staging 驗證；差異在灌資料方式（見下）。
+- **Managed 必須通過 staging 驗證；self-managed 為選配**（申請者可自行決定是否租借試用）。
 
 ## 流程
 
 ### 1. Staging 租借（STAGING_PROVISIONED）
 - 平台佈建固定小規格的 staging 環境（managed 含 zone databases 與投影片 schema 建立的 raw 表；self-managed 為空 cluster）。
 - 租借有**期限**（建議預設 14 天，可申請延長一次）——避免 staging 資源被長期占用。
-  - ⚠️ 期限與延長政策待定案。
+  - ⚠️ 期限與延長政策待定案（見下方「待確認事項」）。
 - 交付 staging 連線資訊與測試指引。
 
 ### 2. 灌測試資料（STAGING_TESTING）
@@ -72,6 +72,10 @@
 - 報告缺必填項目退回補件
 
 > 未來自動化（roadmap）：申請量成長後再實作 staging 租借/報告提交 API，本期不做。
+
+## 待確認事項
+
+1. Staging 租借期限與延長政策（建議預設 14 天、可延長一次）。
 
 ## 與其他功能的依賴關係
 - 上游：workspace-application（APPROVED 狀態）；schema 來自申請時審核結果。

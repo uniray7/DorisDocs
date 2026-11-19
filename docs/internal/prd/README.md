@@ -80,6 +80,7 @@
 13. **資料搬遷**（[data-migration.md](data-migration.md)）——為何需要在 cluster 之間搬遷、共通要求、候選做法（TBD-35）。
 14. **監控與告警**（[monitoring-alerting.md](monitoring-alerting.md)）——各類告警的現況整理（TBD-33）。
 15. **Web Console**（[web-console.md](web-console.md)）——Tool Team 負責的 Admin 後台與使用者功能範圍。
+16. **Managed 申請與使用旅程**（[managed-user-journey.md](managed-user-journey.md)）——把申請、staging、開通、寫入、建表、分享、用量、升級串成一條流程。
 
 ## 7. 多租戶與資源隔離模型
 > Workspace 為租戶單位；資料完全隔離、metadata 互不可見、resource group 隔離運算。Fab 拓撲與 tier 表見 [cluster-topology-and-tiering.md](cluster-topology-and-tiering.md)（門檻草案，TBD-1）；隔離機制見 [workspace-isolation.md](workspace-isolation.md)。

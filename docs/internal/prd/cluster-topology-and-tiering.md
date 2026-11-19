@@ -64,23 +64,10 @@ TIER_CHANGE_REQUESTED（使用者申請或平台觸發）
 
 - 搬遷的共通要求（一致性、停機、寫入處理、名稱不變、帳號權限重建、連線端點）與候選做法見 [data-migration.md](data-migration.md)。
 
-## API 邏輯
+## 待確認事項
 
-| Method | Path | 說明 | 呼叫者 |
-|--------|------|------|--------|
-| GET | `/api/v1/workspaces/{ws}/tier` | 查詢目前 tier、用量比、升級建議 | ws 成員 |
-| POST | `/api/v1/workspaces/{ws}/tier-changes` | 申請升/降級 | ws 負責人 |
-| GET | `/api/v1/workspaces/{ws}/tier-changes/{id}` | 查詢變更進度（狀態機） | ws 成員 |
-| POST | `/api/v1/workspaces/{ws}/tier-changes/{id}/review` | 覆核（approve/reject/defer） | 平台管理員 |
-| GET | `/api/v1/capacity/pools` | 資源池水位（內部） | 平台管理員 |
-
-### 錯誤碼
-| HTTP | 錯誤碼 | 情境 |
-|------|--------|------|
-| 409 | `TIER_CHANGE_IN_PROGRESS` | 已有進行中的變更 |
-| 422 | `TIER_NOT_AVAILABLE_FOR_MODE` | self-managed 申請降到 tier 1 |
-| 422 | `EXCEEDS_MAX_TIER` | 目標超過 tier 3，導人工洽談 |
-| 409 | `COST_CENTER_CONFIRMATION_REQUIRED` | 成本中心未確認成本歸屬 |
+1. Tier 升級由使用者申請、平台主動觸發，或兩者皆可。
+2. 「持續超標」的天數 N（數字見 TBD-15）；超標但不願升級的處置見 TBD-4。
 
 ## 與其他功能的依賴關係
 - 初次判定輸入來自 **workspace-application**；公式定義於 TBD-15（NFR）。

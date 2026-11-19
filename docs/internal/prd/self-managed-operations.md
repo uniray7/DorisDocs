@@ -42,7 +42,7 @@ Self-managed 模式的平台支援**刻意限縮**為：**日常 infra 相關告
 ### 4. HA
 
 - 依全平台做法：每個 table 3 個 replica，單一機器故障可容錯；中長期分散到 3 個機櫃或 3 個 datacenter（[ha-dr.md](ha-dr.md)）。
-- Replica 擋不住誤刪與灌錯資料；self-managed 暫定不提供備份還原（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) §5）。
+- Replica 擋不住誤刪與灌錯資料；備份還原依 DR 規劃（[ha-dr.md](ha-dr.md)，TBD-36）。
 
 ### 5. 其他需求：PM Request 管道
 
@@ -73,7 +73,7 @@ Self-managed 模式的平台支援**刻意限縮**為：**日常 infra 相關告
 | 資料寫入/pipeline | | ✅ |
 | DDL 執行（database＋table，含 ALTER/DROP） | ✅ 代建：驗證（語法/危險操作/撞名）＋保護性 property 注入（RFC-003 前提） | 提交申請 |
 | Schema 設計品質 | ❌ 不審不揹 | ✅（建表諮詢可提 PM request，不保證承接） |
-| 備份/還原 | ❌ 不提供（RFC-003 子決策暫定甲：誤刪/誤操作一律不救援、明文免責；平台保存 DDL 申請紀錄 + Doris audit log〔規劃 ELK〕作舉證） | ✅ 自行負責 |
+| 備份/還原 | 依 DR 規劃（TBD-36）；平台保存 DDL 申請紀錄＋Doris audit log（規劃 ELK）作舉證 | 依 DR 規劃 |
 | 查詢效能調校 | | ✅（優化協助可提 PM request，不保證承接） |
 | 帳號/權限管理 | ✅ 全由平台管理（含 service account） | 申請 service account |
 | 配額與用量申報 | | ✅（超標處理見 cluster-topology-and-tiering） |
@@ -89,7 +89,7 @@ Self-managed 模式的平台支援**刻意限縮**為：**日常 infra 相關告
 | 5 | 使用者申請 scale out、硬體不足 | WAITING_FOR_CAPACITY + 預估時間（與 workspace 申請同機制） |
 | 6 | 使用者把 cluster 打掛（誤設定/超載） | 平台恢復「系統可用」狀態（進程/節點層）；資料修復與根因排除由使用者自理，如需平台協助提 request 給 PM（不保證承接） |
 | 7 | 使用者需要新建/變更/刪除 database 或 table | 提交代建申請 → 平台驗證後執行（RFC-003 前提；提交管道與時效 → TBD-32） |
-| 8 | 使用者要求 dbt 直連建表（高頻 create/drop） | 現階段不支援（全代建政策）；引導透過 PM 管道正式提出需求 → 觸發 RFC-003 §9 放寬預案討論 |
+| 8 | 使用者要求 dbt 直連建表（高頻 create/drop） | 現階段不支援（全代建政策）；引導透過 PM 管道正式提出需求 → 觸發 RFC-003 §8 放寬預案討論（TBD-29） |
 
 ## 與其他功能的依賴關係
 - 開通交付內容與 WAITING_FOR_CAPACITY 狀態依 **workspace-application**。

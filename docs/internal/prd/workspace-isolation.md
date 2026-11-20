@@ -41,7 +41,7 @@
 | 2. 執行資源 | 掃描 IO 限速（`read_bytes_per_second`）+ scan 線程數限制 | 防止單租戶吃光磁碟頻寬——最易被忽略的一層 |
 | 3. 防呆兜底 | Workload Schedule Policy：自動 kill 超時/掃描量超標查詢 | Runaway query 自動處決 |
 | 3. 防呆兜底 | SQL Block Rule：限制單查詢可掃 partition/tablet 數 | 強迫帶分區條件；規則寫入對外使用規範 |
-| 4. 寫入側 | 平台 pipeline 統一控制：per-ws 消費限速、merge SQL 錯峰排程、批次大小治理 | Shared 只有 managed、寫入全走 pipeline——壓力源頭在平台手上；同時治理 compaction 壓力（高頻小批量寫入的隱形殺手） |
+| 4. 寫入側 | 平台 pipeline 統一控制：per-ws 消費限速、寫入錯峰排程、批次大小治理 | Shared 只有 managed、寫入全走 pipeline——壓力源頭在平台手上；同時治理 compaction 壓力（高頻小批量寫入的隱形殺手） |
 | 5. 實體隔離（選配） | Resource tag 將 ws 資料副本釘到指定 BE 群組 | 隔離最強（page cache/compaction 都分開）但每群組至少 3 BEs，pool 利用率大降；保留給 shared 內大租戶或 shared→dedicated 中繼形態，tier 1 預設不用 |
 
 - **已知無法完全隔離的共用點**（誠實揭露）：FE（metadata/連線管理）、page cache、compaction 線程池。故 tier 1 規範保守（shared 規範較緊原則），並保留升級 dedicated 的明確路徑。

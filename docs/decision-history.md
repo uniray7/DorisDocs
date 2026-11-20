@@ -11,12 +11,12 @@
 | 部署與組織 | Doris 跑在 HashiCorp Nomad（目前 1.11.1，因 sticky 相關 bug 評估升級 1.11.3，TBD-37）；Tool Team（隸屬資料平台團隊）負責 Web Console 與授權後端 | 「私有雲、硬體池浮動」的描述（不符現況） | 有效 | uniray7 |
 | Fab 維度 | Workspace 申請時指定要在哪些 fab 使用服務（至少兩個）；每個 fab 各自提供相同數量、彼此獨立的 Doris 服務，不跨 fab 部署；與 HA 無關 | — （新增維度） | 有效 | uniray7 |
 | Workspace 命名 | 允許英數字之間的單底線（例 `domain_product`），`__` 保留為分隔符 | 07-13：ws 名稱只允許小寫字母＋數字 | 有效（細節 TBD-26） | uniray7 |
-| Zone | tmp zone 取消，managed 只剩 raw／curated | 07-13：tmp／raw／curated 三層 | 有效（ingestion 流程待改寫 TBD-28） | uniray7 |
+| Zone 與寫入 | 整個產品不使用 tmp；managed 只有 raw／curated，資料一律由平台 pipeline 寫入 raw；self-managed 由使用者自行寫入 | 07-13：tmp／raw／curated 三層，平台通道只寫 tmp、使用者以 merge SQL 寫入 raw | 有效（寫入細節 TBD-28；TBD-13、TBD-14 刪除） | uniray7 |
 | 帳號管理 | Doris user、role、密碼全由平台管理（兩種模式） | 07-14 前提：self-managed 拿管理帳號後自理（與「不授予 DDL」衝突） | 有效 | uniray7 |
 | 資料存取 | Workspace 內不開放個人帳號直接存取 table，一律透過 service account；平台 policy 上限：raw 只能讀，curated 可 CREATE／INSERT／DROP TABLE | v0.12 以 owner、reader 人員帳號描述 | 有效（curated 建表風險 TBD-40、刪表方式 TBD-30） | uniray7 |
 | 身分模型 | Owner 是人，在 Web Console 操作自己的 workspace（申請 service account、設定權限），不持有 Doris 帳號，自己讀資料也透過 service account；開通時不建立 service account，一律由 owner 申請；授權對象是 service account；權限由 owner 決定（database 或 table 層級），不得超過平台 policy 上限（例：raw 不可寫入） | v0.12：owner、reader 是人員的 Doris 帳號，分享時依公司身分建立帳號、只授 table 層級 `SELECT_PRIV`；開通時由平台建立 service account 並交付憑證 | 有效（申請審核、憑證交付、多 fab、命名、交接 TBD-24；v0.12 的整庫分享因此定案；限時分享不需要，TBD-25 刪除） | uniray7 |
 | Managed curated DDL | curated 可直接 CREATE／DROP／TRUNCATE TABLE（執行身分為 service account） | 07-17：curated 開放自建擱置 | 有效（刪表方式 TBD-30、建表風險 TBD-40、ALTER 見 TBD-22） | uniray7 |
-| Managed raw DDL | raw table 由平台建立 | 07-13：DDL 治理方案 A（owner approve）／B（平台審核）並列 | 有效（建表前是否審核 TBD-7） | uniray7 |
+| Managed raw DDL | raw table 由平台建立；建議建表前由平台審核 schema，原因是 managed 承諾由平台負責效能調校 | 07-13：DDL 治理方案 A（owner approve）／B（平台審核）並列 | 有效（審核尚待 PM／管理層拍板，TBD-7） | uniray7 |
 | 申請流程 | 申請與審核維持人工；核准後由平台透過 Web Console 的 Admin 後台執行開通 | v0.12 的 Console 申請頁、審核頁、開通狀態（不採用） | 有效（後台範圍 TBD-34） | uniray7 |
 | 跨 workspace 分享 | 目前不支援 | v0.12：owner 可分享給其他 workspace（不採用） | 有效（TBD-31 刪除） | uniray7 |
 | Self-managed dbt 直接 DDL | 需團隊討論；擔憂過多或過碎的 partition 造成 FE 記憶體壓力甚至 cluster crash，風險與防護寫在 `prd/ddl-governance.md` | 07-17：dbt 需求正式提出才啟動放寬預案 | 待決（TBD-29） | uniray7 |

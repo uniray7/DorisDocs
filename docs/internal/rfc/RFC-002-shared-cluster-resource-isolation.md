@@ -43,7 +43,7 @@ Shared cluster 上，用哪一組機制、怎麼組合，來保證單一租戶�
 ### 第 4 層：寫入側治理（本平台架構的天然優勢）
 Shared cluster 僅 managed、寫入唯一通道是平台 pipeline，因此：
 - Per-ws ingestion 限速做在 pipeline consumer（Kafka 消費速率），不依賴 Doris 端擋。
-- Merge SQL 平台代管排程 → 可錯峰，避免多 ws merge 對撞。
+- 寫入 raw 由平台 pipeline 排程 → 可錯峰，避免多 ws 寫入對撞。
 - 批次大小/頻率統一治理 → 從源頭控制 compaction 壓力（高頻小批量寫入 → compaction 積壓 → 全 cluster 變慢，是 shared 最常見的隱形殺手）。
 
 ### 第 5 層（選配/升級路徑）：Resource Tag

@@ -47,7 +47,7 @@ Tier 1 為 shared cluster（僅 managed），tier 2 起為 dedicated；超過 ti
 
 ## 五、Managed 模式的資料管理
 
-- **兩層 zone**：`raw`（平台建表、平台 pipeline 寫入）→ `curated`（service account 以 `INSERT … SELECT` 產出、直接建表）。原本的 `tmp` zone 已取消，ingestion 寫入 raw 的流程待改寫（TBD-28）。
+- **兩層 zone**：`raw`（平台建表、平台 pipeline 寫入）→ `curated`（service account 以 `INSERT … SELECT` 產出、直接建表）。資料一律由平台 pipeline 寫入 raw，寫入細節待定（TBD-28）。
 - **Streaming pipeline**：使用者以固定 format 打 message 進平台 Kafka，支援三種 format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；格式錯誤的資料進 corrupted data 區（MinIO）並告警，不中斷匯入。
 - **Batch pipeline**：使用者上傳檔案至平台儲存的 landing 路徑，排程/手動觸發匯入，與 streaming 走同一套落地與治理路徑；來源介面預留未來 lakehouse → Doris 通道的擴充（規格草稿多處假設待確認）。
 - **高可用**（兩種模式）：cluster 部署在多台機器、每個 table 3 個 replica，單一機器故障可容錯；中長期分散到 3 個機櫃或 3 個 datacenter（做法待研究，TBD-9）。

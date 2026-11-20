@@ -39,7 +39,7 @@ docs/
 
 ## 寫作規範
 
-1. **專有名詞不硬翻，直接用英文**。例：workspace、fab、cluster、tier、managed／self-managed、pipeline、staging、quota、zone（tmp／raw／curated）、DDL、CCR、workload group、owner、reader、grant／revoke、privilege。中文用在說明句。
+1. **專有名詞不硬翻，直接用英文**。例：workspace、fab、cluster、tier、managed／self-managed、pipeline、staging、quota、zone（raw／curated）、DDL、CCR、workload group、owner、reader、grant／revoke、privilege。中文用在說明句。
 2. **只寫現況**：正文不寫「某日補充」、不留刪除線、不保留被推翻的方案。決議變更與原因記到 `docs/decision-history.md`；被否決的選項只留在 RFC。
 3. **單一來源**：同一張表、同一個定義只放一處，其他文件用連結。例：模式對照表在 `prd/README.md`，tier 表在 `prd/cluster-topology-and-tiering.md`。
 4. **精簡優先**：能用表格就不寫段落；一份 feature 文件只談一個 topic。

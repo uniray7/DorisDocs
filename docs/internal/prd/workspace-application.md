@@ -25,7 +25,7 @@
 5. 團隊聯絡人（至少兩位：主要/備援）
 6. 容量估算三要素：目前 table data size、預期資料成長量、資料 retention → 依 template 附的**公式**試算最大資料量（用於 tier 判定；上線後配額改以壓縮後占用計）
 7. 效能需求三要素：peak QPS（5 分鐘滑動窗口平均）、預期 query performance（目標延遲）、ingestion throughput → 依平台**公式**試算建議規格
-8. Table schema 與 query pattern（managed 附上；作為 raw 初始建表，是否需平台審核 → TBD-7）
+8. Table schema 與 query pattern（managed 附上；作為 raw 初始建表，建議平台審核 → TBD-7）
 9. 使用情境描述（審核參考）
 10. 資料敏感度聲明（是否含 PII/機敏資料——影響 TBD-6 治理流程）
 11. 預計匯入方式（managed：streaming（三種 CDC format）/ batch，可複選；self-managed 略過此頁）
@@ -44,7 +44,7 @@
 
 ### 佈建與交付
 - Staging 測試通過後（self-managed 未租借 staging 則於核准後），由平台人員透過 Web Console 的 Admin 後台執行佈建（每個申請的 fab 各一套）：
-  - Tier 1（必為 managed）：在 shared cluster 建立 raw／curated databases（`{ws}__{user_defined}__raw`／`__curated`）+ resource group；申請投影片附的 schema 作為 raw 初始建表由平台執行（是否需審核 → TBD-7），並回寫一筆 DDL 申請紀錄（來源標記為 workspace 申請），讓 schema 版本歷史從第一天就完整
+  - Tier 1（必為 managed）：在 shared cluster 建立 raw／curated databases（`{ws}__{user_defined}__raw`／`__curated`）+ resource group；申請投影片附的 schema 作為 raw 初始建表由平台執行（建議審核 → TBD-7），並回寫一筆 DDL 申請紀錄（來源標記為 workspace 申請），讓 schema 版本歷史從第一天就完整
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
   - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + database（database 命名 → TBD-8）
   - 開通時不建立 service account；owner 之後在 Web Console 申請（見 [access-control.md](access-control.md)）

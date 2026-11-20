@@ -11,7 +11,7 @@
 | Owner 自助：申請 service account、設定權限（grant／revoke） | Owner | 後續交付 | [authorization.md](authorization.md) |
 | Role 建立、指派、移除 | 平台人員 | 可擴充 | [authorization.md](authorization.md) |
 | DDL 申請 | Owner | 提交管道待定（TBD-32） | [ddl-governance.md](ddl-governance.md) |
-| Pipeline／batch job 管理 | Managed 使用者 | tmp 取消後流程待改寫（TBD-28） | [streaming-ingestion.md](streaming-ingestion.md)、[batch-ingestion.md](batch-ingestion.md) |
+| Pipeline／batch job 管理 | Managed 使用者 | 寫入 raw 的細節待定（TBD-28） | [streaming-ingestion.md](streaming-ingestion.md)、[batch-ingestion.md](batch-ingestion.md) |
 | 配額與用量儀表板 | 使用者 | 規格草稿 | [quota-and-usage.md](quota-and-usage.md) |
 
 ## Workspace 申請與開通

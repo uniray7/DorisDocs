@@ -7,7 +7,7 @@
 | 物件 | Managed | Self-managed |
 |------|---------|--------------|
 | Database | 平台建立（owner 透過平台申請） | 平台建立；命名方式 → TBD-8 |
-| Table | **raw**：平台建表、改表、刪表、清空；建表前是否審核 schema → TBD-7<br>**curated**：service account 直接 CREATE／DROP／TRUNCATE（建表的 FE 風險 → TBD-40；刪表方式 → TBD-30）；ALTER → TBD-22 | 一律提交平台代建（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 前提）；是否因 dbt 開放直接 DDL → TBD-29 |
+| Table | **raw**：平台建表、改表、刪表、清空；建議建表前審核 schema（TBD-7）<br>**curated**：service account 直接 CREATE／DROP／TRUNCATE（建表的 FE 風險 → TBD-40；刪表方式 → TBD-30）；ALTER → TBD-22 | 一律提交平台代建（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 前提）；是否因 dbt 開放直接 DDL → TBD-29 |
 
 - DDL 申請的提交管道（人工或 Console）與執行時效 → TBD-32。
 - 所有經平台執行的 DDL 都留稽核紀錄：誰申請、誰核准、何時執行、DDL 全文；ALTER／DROP 執行前記錄變更前 schema。
@@ -21,7 +21,7 @@
 ### Raw table（平台執行）
 
 1. Owner 提交申請：操作類型（create／alter／drop）、目標表、schema、用途、預估資料量。
-2. 是否需要平台審核 schema → TBD-7。
+2. 平台審核 schema（**建議**，TBD-7）。原因：managed 承諾由平台負責效能調校，而 raw 的表模型、key、partition、bucket 直接決定查詢效能與 FE 負擔；不審核，平台等於要為自己無法掌控的設計承擔效能責任。開通時的 raw 初始表，schema 設計已在 staging 報告審核時一併審查。
 3. 平台系統帳號執行，結果通知申請者。
 
 開通時依申請投影片建立的 raw 初始表，同樣回寫一筆 DDL 申請紀錄（來源標記為 workspace 申請），不會「憑空出現」。
@@ -61,7 +61,7 @@ Doris 沒有建立者擁有權，建表不會自動授權給建立者。要讓 s
 ## Self-managed
 
 - Database 與 table 的 DDL 目前一律走「提交 → 驗證（語法、危險操作、撞名）→ 平台代建並注入保護性設定」，不審 schema 設計；細節與責任分工見 RFC-003 §2、§5。
-- Database 組織方式（固定三庫／命名規則／表單宣告）→ TBD-8（待 manager 決策）。
+- Database 組織方式（固定兩庫／命名規則／表單宣告）→ TBD-8（待 manager 決策）。
 
 ### dbt 的範圍（若開放直接 DDL）
 

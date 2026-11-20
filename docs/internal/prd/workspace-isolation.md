@@ -50,7 +50,7 @@
 
 | 動作 | 內容 |
 |------|------|
-| `provision_ws(ws, mode, tier)` | 建立 databases、service account、workload group（shared）、GRANT 授權、Kafka topic + ACL（managed）、corrupted data prefix（managed） |
+| `provision_ws(ws, mode, tier)` | 建立 databases、workload group（shared）、GRANT 授權、Kafka topic + ACL（managed）、corrupted data prefix（managed）；不建立 service account（owner 之後申請） |
 | `suspend_ws(ws)` | 撤銷登入/查詢權限，保留資料（違規/閒置；目前無付費機制，不含欠費） |
 | `decommission_ws(ws)` | 回收帳號 → 資料清除（含 Kafka topic、corrupted data）→ 釋放資源；清除有紀錄可稽核 |
 
@@ -70,7 +70,7 @@
 ## 與其他功能的依賴關係
 - 佈建原語被 **workspace-application**（正式與 staging 佈建）呼叫。
 - Workload group 參數由 **cluster-topology-and-tiering** 的 tier 規格決定。
-- 帳號模型細節（人員帳號 vs 服務帳號、權限矩陣）在 **access-control** 展開；本 spec 只定隔離邊界。
+- 帳號模型細節（owner 與 service account、權限上限）在 **access-control** 展開；本 spec 只定隔離邊界。
 - Managed 寫入路徑限制與 **streaming/batch-ingestion**、**ddl-governance** 銜接（僅平台 pipeline 帳號可寫 raw；使用者 ELT 只可寫 curated）。
 
 ## 邊界審查

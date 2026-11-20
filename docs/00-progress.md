@@ -13,7 +13,7 @@
 | 申請與開通 | 人工：投影片 template＋每週三申請會議＋追蹤表。核准後 managed 先過 staging 小規格試用（self-managed 選配），再由平台透過 Web Console 的 Admin 後台開通 |
 | 資料寫入 | Managed：平台 streaming（三種固定 CDC format）與 batch pipeline 寫入 raw；tmp zone 已取消，流程待改寫（TBD-28）。Self-managed：自建 pipeline |
 | DDL | Database 由平台建立。Managed：raw 由平台建立，curated 由 service account 直接建立。Self-managed：table 一律平台代建（[ddl-governance.md](internal/prd/ddl-governance.md)） |
-| 帳號與授權 | Doris user、role、密碼全由平台管理；資料存取一律透過 service account；查詢協定為 MySQL 與 Arrow Flight SQL（[access-control.md](internal/prd/access-control.md)、[authorization.md](internal/prd/authorization.md)） |
+| 帳號與授權 | Doris user、role、密碼全由平台管理；資料存取一律透過 service account，開通時不建立 service account，由 owner（人）在 Web Console 申請，並在平台 policy 上限內設定權限；查詢協定為 MySQL 與 Arrow Flight SQL（[access-control.md](internal/prd/access-control.md)、[authorization.md](internal/prd/authorization.md)） |
 | HA／DR | 每個 table 3 個 replica，單一機器故障可容錯；中長期分散到 3 機櫃或 3 datacenter。DR 未來以 backup／restore 到 S3 或 MinIO（[ha-dr.md](internal/prd/ha-dr.md)） |
 | 支援與費用 | Self-managed 平台只負責 infra 告警、保護性 config、scale 代操作、DDL 代建；其他需求提 request 給 PM。目前無任何付費機制 |
 | 時程 | 未定；首個目標部門未定（TBD-20） |
@@ -28,7 +28,7 @@
 | [staging-validation.md](internal/prd/staging-validation.md) | 2 Feature 細化 | 草稿 | 15 |
 | [cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md) | 2 Feature 細化 | 草稿 | 1、2、4、21、37 |
 | [workspace-isolation.md](internal/prd/workspace-isolation.md) | 2 Feature 細化 | 草稿 | 18、31 |
-| [authorization.md](internal/prd/authorization.md) | 2 Feature 細化 | 評審中 | 21–27、31、38、39 |
+| [authorization.md](internal/prd/authorization.md) | 2 Feature 細化 | 評審中 | 21–24、26、27、31、38、39 |
 | [access-control.md](internal/prd/access-control.md) | 2 Feature 細化 | 草稿（待再討論） | 10、11、16、22、24、30、38、39 |
 | [ddl-governance.md](internal/prd/ddl-governance.md) | 2 Feature 細化 | 草稿（待再討論） | 7、8、22、23、29、30、32、38、40 |
 | [streaming-ingestion.md](internal/prd/streaming-ingestion.md) | 2 Feature 細化 | 草稿（tmp 流程待改寫） | 28 |
@@ -74,8 +74,7 @@
 | TBD-21 | 同一 workspace 在同一 fab 能否使用多座 cluster（目前傾向一座） | 主管 | 無 | authorization | authorization、cluster-topology-and-tiering | 未開始 |
 | TBD-22 | Managed curated 是否開放 ALTER TABLE | PM＋工程師 | 無 | authorization | access-control、authorization、ddl-governance、decision-history | 未開始 |
 | TBD-23 | Self-managed TRUNCATE／DROP 的執行身分與範圍；dbt 範圍 A／B | 主管＋工程師 | 無 | ddl-governance | authorization、ddl-governance | 未開始 |
-| TBD-24 | 公司識別碼對應 Doris 帳號、憑證交付、owner 離職或轉調接手、人員帳號與 service account 的對應 | 工程師＋PM | 無 | authorization | access-control、authorization、managed-user-journey | 未開始 |
-| TBD-25 | 是否支援整庫分享（含未來新表）、限時分享 | PM | 無 | authorization | authorization | 未開始 |
+| TBD-24 | Service account 的申請是否需平台審核、憑證交付方式、workspace 橫跨多個 fab 時帳號如何建立（帳密是否一致）、命名規則、owner 離職或轉調時的交接 | 工程師＋PM | 無 | authorization | access-control、authorization、decision-history、managed-user-journey | 未開始 |
 | TBD-26 | 命名白名單細節（user_defined 可否數字開頭等） | 工程師 | 無 | authorization | authorization、decision-history、managed-user-journey、prd/README、workspace-application | 未開始 |
 | TBD-27 | OPA 外掛 PoC（4.1.4 相容性、兩種協定一致性、revoke 生效來源） | 工程師 | 無 | authorization | authorization、decision-history | 未開始 |
 | TBD-28 | tmp 取消後的 ingestion 流程：CDC／batch 資料如何進 raw、parse／merge 由誰做、排程機制 | 工程師＋PM | streaming／batch 文件改寫 | streaming-ingestion、batch-ingestion | batch-ingestion、decision-history、managed-user-journey、prd/README、product-overview、streaming-ingestion、web-console | 未開始 |

@@ -44,11 +44,12 @@
 
 ### 佈建與交付
 - Staging 測試通過後（self-managed 未租借 staging 則於核准後），由平台人員透過 Web Console 的 Admin 後台執行佈建（每個申請的 fab 各一套）：
-  - Tier 1（必為 managed）：在 shared cluster 建立 raw／curated databases（`{ws}__{user_defined}__raw`／`__curated`）+ resource group + service account；申請投影片附的 schema 作為 raw 初始建表由平台執行（是否需審核 → TBD-7），並回寫一筆 DDL 申請紀錄（來源標記為 workspace 申請），讓 schema 版本歷史從第一天就完整
+  - Tier 1（必為 managed）：在 shared cluster 建立 raw／curated databases（`{ws}__{user_defined}__raw`／`__curated`）+ resource group；申請投影片附的 schema 作為 raw 初始建表由平台執行（是否需審核 → TBD-7），並回寫一筆 DDL 申請紀錄（來源標記為 workspace 申請），讓 schema 版本歷史從第一天就完整
   - Tier 2/3 managed：開立 dedicated cluster，其餘同上
-  - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + database + service account（database 命名 → TBD-8）
+  - Tier 2/3 self-managed：開立 dedicated cluster + **monitor、alert、log** + 保護性 config + database（database 命名 → TBD-8）
+  - 開通時不建立 service account；owner 之後在 Web Console 申請（見 [access-control.md](access-control.md)）
   - 硬體不足時，狀態停在 WAITING_FOR_CAPACITY 並通知申請者預計時間
-- 完成後交付：連線資訊、service account 憑證、配額明細、快速開始文件連結（依模式給對應文件：managed 給 pipeline/DDL 申請指南，self-managed 給責任歸屬、**DDL 代建提交管道**（RFC-003：database＋table 一律代建）與告警說明）。
+- 完成後交付：連線資訊、配額明細、快速開始文件連結（依模式給對應文件：managed 給 pipeline/DDL 申請指南，self-managed 給責任歸屬、**DDL 代建提交管道**（RFC-003：database＋table 一律代建）與告警說明）。
 
 ## 投影片 Template 規格
 
@@ -110,7 +111,6 @@ ACTIVE → DECOMMISSIONING → DECOMMISSIONED（申請者主動或平台終止�
 - 正式佈建前依賴 **Staging 驗證**（staging-validation.md）的測試報告通過（managed 必經，self-managed 選配）。
 - 佈建動作依賴 **多租戶隔離**（database/resource group 建立）與 **Cluster tier 分配**（tier 判定規則）。
 - Managed 申請時審核的 schema 即 raw zone 初始建表，後續增修表走 **Database/Table 申請流程**（ddl-governance.md）。
-- 交付的 service account 依賴 **帳號模型**（access-control.md）。
 - `ESTIMATE_EXCEEDS_MAX_TIER` 的處理依 TBD-2 決議。
 
 ## 邊界審查

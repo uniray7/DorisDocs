@@ -75,7 +75,7 @@
 8. **Self-managed 營運支援**（[self-managed-operations.md](self-managed-operations.md)）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
 9. **配額與用量可視化**（[quota-and-usage.md](quota-and-usage.md)）——使用者查看自己的配額、用量、查詢效能。
 10. **帳號模型與查詢協定**（[access-control.md](access-control.md)）——帳號全由平台管理、資料存取一律透過 service account；MySQL protocol 與 Arrow Flight SQL。
-11. **授權**（[authorization.md](authorization.md)）——Authorization PRD v0.12：平台管理 Console 的 user 建立與 grant／revoke、owner 讀權分享、Doris privilege 對照、OPA 長期方向。
+11. **授權**（[authorization.md](authorization.md)）——Authorization PRD v0.12：平台管理 Console 的 user 建立與 grant／revoke、owner 申請 service account 與設定權限、Doris privilege 對照、OPA 長期方向。
 12. **HA／DR**（[ha-dr.md](ha-dr.md)）——3 replica 容錯；中長期分散到 3 機櫃或 3 datacenter（TBD-9）；DR 以 backup／restore 到 S3 或 MinIO（TBD-36）。
 13. **資料搬遷**（[data-migration.md](data-migration.md)）——為何需要在 cluster 之間搬遷、共通要求、候選做法（TBD-35）。
 14. **監控與告警**（[monitoring-alerting.md](monitoring-alerting.md)）——各類告警的現況整理（TBD-33）。

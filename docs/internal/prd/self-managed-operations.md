@@ -15,7 +15,7 @@ Self-managed 模式的平台支援**刻意限縮**為：**日常 infra 相關告
 ## 平台提供的內容
 
 ### 1. 開通時隨 cluster 交付（provision 階段，見 workspace-application）
-- Dedicated cluster（tier 2+）+ database + service account（帳號、權限全由平台管理，見 [access-control.md](access-control.md)）。
+- Dedicated cluster（tier 2+）+ database。Service account 不隨開通建立，由 owner 在 Web Console 申請（帳號、權限全由平台管理，見 [access-control.md](access-control.md)）。
 - **Monitor / Alert / Log** 三件套：cluster 級指標儀表板、告警通道（送 ws 聯絡人）、FE/BE log 查詢入口。⚠️ 具體堆疊（Prometheus/Grafana 或內部系統）實作時定。
 - **保護性 config**：防止 cluster 被打壞的底線設定，使用者**不可修改**。範圍草案（清單待定，TBD-17）⚠️：
   | 類別 | 例 | 目的 |

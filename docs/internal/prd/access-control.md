@@ -6,22 +6,29 @@
 ## 帳號模型
 
 - **Doris user、role、密碼全由平台管理**，managed 與 self-managed 皆同；使用者不能自建 Doris 帳號。
-- **資料存取一律透過 service account**：workspace 內不開放個人帳號直接存取 table，需要存取的程式或團隊都向平台申請 service account。
+- **資料存取一律透過 service account**：workspace 內不開放個人帳號直接存取 table，owner 本人要讀資料也一樣。
 - 平台層（Console）的身分是否接公司 SSO／LDAP → TBD-16。
 
-### Managed 的權限
+| 身分 | 是誰 | 能做什麼 |
+|------|------|----------|
+| Workspace owner | 人（workspace 申請人） | 在 Web Console 操作自己的 workspace：申請 service account、設定其權限。沒有 Doris 帳號，不能直接讀資料 |
+| Service account | Doris 帳號，給程式或團隊使用 | 依 owner 設定的權限存取資料 |
+
+**權限由 owner 決定，但不能超過平台 policy 上限**：owner 可依用途為每個 service account 選擇權限（例如給報表工具只開讀取），超出下列上限的設定一律拒絕。
+
+### Managed 的權限上限
 
 | 身分 | raw database | curated database |
 |------|--------------|------------------|
-| Service account | 只能讀（SELECT） | SELECT、INSERT、CREATE TABLE、DROP TABLE → 開放建表是否安全見 TBD-30；ALTER 見 TBD-22；TRUNCATE 所需權限待驗證（TBD-38） |
+| Service account | 只能讀（SELECT），不可寫入 | SELECT、INSERT、CREATE TABLE、DROP TABLE → 開放建表是否安全見 TBD-30；ALTER 見 TBD-22；TRUNCATE 所需權限待驗證（TBD-38） |
 | 平台 ingestion pipeline 帳號 | 寫入指定的 raw 表 | — |
 | 平台系統帳號 | 建表、改表、刪表、清空 | — |
 
-### Self-managed 的權限
+### Self-managed 的權限上限
 
 | 身分 | 權限 |
 |------|------|
-| Service account | SELECT、LOAD、INSERT、DELETE、UPDATE；可對自己管理的表 grant／revoke 讀取權（見 authorization.md） |
+| Service account | SELECT、LOAD、INSERT、DELETE、UPDATE |
 | 平台系統帳號 | 建 database、DDL 代建、監控、保護性 config 維護（對外文件揭露其存在與用途） |
 
 - Table DDL 目前一律由平台代建（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md)）；是否因 dbt 開放 service account 直接 DDL → TBD-29，見 [ddl-governance.md](ddl-governance.md)。
@@ -31,9 +38,11 @@
 
 | 事件 | 行為 |
 |------|------|
-| Service account 申請 | 向平台申請，平台建立並交付憑證（交付方式 → TBD-24） |
+| Service account 申請 | 開通時不建立；owner 在 Web Console 申請，平台建立並交付憑證；是否需平台審核、憑證交付方式 → TBD-24 |
+| 權限變更 | Owner 在 Web Console grant／revoke，不超過平台 policy 上限（流程見 [authorization.md](authorization.md)） |
 | 憑證輪換 | 支援輪換；週期政策 → TBD-15 |
 | 憑證外洩通報 | 平台立即輪換，並以稽核紀錄追查使用情形 |
+| Owner 離職或轉調 | Workspace 與 service account 的責任人交接 → TBD-24 |
 | Workspace SUSPENDED | 全部帳號停用 |
 | Workspace DECOMMISSIONED | 全部帳號回收，稽核紀錄保留 |
 
@@ -60,10 +69,12 @@
 | 3 | Arrow Flight SQL 執行 metadata SQL 或非 SELECT 語句 | 待驗證（TBD-39） |
 | 4 | Service account 對有寫入權的表執行 TRUNCATE | 待驗證（TBD-38）：若 source 為準，有 `LOAD_PRIV` 即可執行 |
 | 5 | 同一帳號經兩種協定連線 | 權限行為一致；metadata 隔離在兩種協定下皆成立 |
+| 6 | Owner 為 service account 設定超出平台 policy 的權限（例：raw 寫入） | Console 拒絕並說明原因 |
 
 ## 驗收標準
 
 - [ ] 權限表逐格實測（兩種模式）
 - [ ] 使用者端無任何帳號持有 `GRANT_PRIV`
+- [ ] Owner 設定超出平台 policy 上限的權限時被拒絕
 - [ ] Workspace 停用後所有帳號無法連線（含既有連線）
 - [ ] 兩種協定的權限結果一致

@@ -11,7 +11,7 @@
 
 **為什麼做**：擺脫 Oracle license 成本與綁定、sunset HBase 舊 tech stack。既有分析型資料規模約數百 TB。
 
-**明確不做**：既有資料遷移（各團隊自理）、交易型（OLTP）工作負載、BI 工具託管。跨 workspace 資料分享方向未定（TBD-31）。
+**明確不做**：既有資料遷移（各團隊自理）、交易型（OLTP）工作負載、BI 工具託管、跨 workspace 資料分享。
 
 ---
 
@@ -58,7 +58,7 @@ Tier 1 為 shared cluster（僅 managed），tier 2 起為 dedicated；超過 ti
 | 決策 | 內容 |
 |------|------|
 | 租戶單位 | Workspace（團隊自定粒度），**強制綁定成本中心** |
-| 隔離要求 | 資料、metadata、運算三層完全隔離；跨 ws 分享方向未定（TBD-31） |
+| 隔離要求 | 資料、metadata、運算三層完全隔離；不支援跨 ws 分享 |
 | 模式轉換 | 不可轉換；要換模式需開新 ws 搬資料 |
 | 計量方式 | 儲存：審核用原始大小、上線後按壓縮後占用；QPS：5 分鐘滑動窗口平均 |
 | 命名慣例 | Managed 一律 `{ws}__{自訂}__{raw\|curated}`；self-managed 待定（TBD-8） |
@@ -68,12 +68,12 @@ Tier 1 為 shared cluster（僅 managed），tier 2 起為 dedicated；超過 ti
 
 ### 待拍板（會影響產品走向）
 
-需要管理層拍板的事項：TBD-1、TBD-2、TBD-3、TBD-4、TBD-5、TBD-6、TBD-7、TBD-8、TBD-20、TBD-29、TBD-30、TBD-31、TBD-40。各項的影響、負責人與狀態見 [00-progress.md 的 TBD 清單](00-progress.md#tbd-清單)。
+需要管理層拍板的事項：TBD-1、TBD-2、TBD-3、TBD-4、TBD-5、TBD-6、TBD-7、TBD-8、TBD-20、TBD-29、TBD-30、TBD-40。各項的影響、負責人與狀態見 [00-progress.md 的 TBD 清單](00-progress.md#tbd-清單)。
 
 ### 需注意的風險
 - **人工申請流程的規模瓶頸**：每週三會議承載量有限，申請量成長時會排隊；已預留自動化路徑，但需要有觸發升級的判斷點。
 - **Staging 與正式環境落差**：staging 驗不了真實效能，上線後才見真章——對外文件會明確免責，但第一批使用者的預期管理要做好。
-- **Lakehouse 使用習慣落差**：使用者習慣跨 workspace 存取；平台是否支援分享尚未定案（TBD-31），對外溝通前需先定。
+- **Lakehouse 使用習慣落差**：使用者習慣跨 workspace 存取，平台目前不支援，對外文件需事先說明。
 
 ## 八、文件進度與下一步
 

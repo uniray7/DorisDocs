@@ -3,7 +3,7 @@
 > 記錄每一筆決議與後續變更。正文文件只寫現況；想知道「為什麼改過」來這裡查。
 > 狀態：**有效**＝目前仍適用；**已取代**＝被後面的決議推翻或修改；**待決**＝已提案、尚未拍板（對應 TBD）。
 
-## 2026-11-19：交接前整理（合併 Authorization PRD v0.12）
+## 2026-11-19 ～ 11-20：交接前整理（合併 Authorization PRD v0.12、內容討論）
 
 | 主題 | 決議 | 取代了什麼（原因） | 狀態 | 決策者 |
 |------|------|-------------------|------|--------|
@@ -18,7 +18,7 @@
 | Managed curated DDL | curated 可直接 CREATE／DROP／TRUNCATE TABLE（執行身分為 service account） | 07-17：curated 開放自建擱置 | 有效（刪表方式 TBD-30、建表風險 TBD-40、ALTER 見 TBD-22） | uniray7 |
 | Managed raw DDL | raw table 由平台建立 | 07-13：DDL 治理方案 A（owner approve）／B（平台審核）並列 | 有效（建表前是否審核 TBD-7） | uniray7 |
 | 申請流程 | 申請與審核維持人工；核准後由平台透過 Web Console 的 Admin 後台執行開通 | v0.12 的 Console 申請頁、審核頁、開通狀態（不採用） | 有效（後台範圍 TBD-34） | uniray7 |
-| 跨 workspace 分享 | 方向未定 | 07-13：明確不支援；v0.12：owner 可分享給其他 workspace | 待決（TBD-31） | uniray7 |
+| 跨 workspace 分享 | 目前不支援 | v0.12：owner 可分享給其他 workspace（不採用） | 有效（TBD-31 刪除） | uniray7 |
 | Self-managed dbt 直接 DDL | 需團隊討論；擔憂過多或過碎的 partition 造成 FE 記憶體壓力甚至 cluster crash，風險與防護寫在 `prd/ddl-governance.md` | 07-17：dbt 需求正式提出才啟動放寬預案 | 待決（TBD-29） | uniray7 |
 | Row／column filter | 長期方向：以 OPA 外掛實作，待 PoC | — | 待決（TBD-5、TBD-27） | uniray7 |
 | HA | Cluster 部署在多台機器、每個 table 3 個 replica，單一機器故障可容錯；中長期分散到 3 個機櫃或 3 個 datacenter | 07-14：self-managed 雙 cluster active-standby＋CCR＋failover | 有效（中長期做法 TBD-9） | uniray7 |

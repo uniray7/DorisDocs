@@ -4,7 +4,7 @@
 > Tool Team 隸屬資料平台團隊，負責建置 Web Console。短期交付給平台人員：先選 fab、cluster，再於該 cluster 建立 Doris user，或對指定 user 的 database／table privilege 執行 grant 或 revoke。
 
 > **與 repo 現有決議的差異（合併時確認，2026-11-19）**
-> - **跨 workspace 分享**：v0.12 允許 owner 分享給其他 workspace；方向未定 → TBD-31。
+> - **跨 workspace 分享**：v0.12 允許 owner 分享給其他 workspace；目前不支援。
 > - **帳號模型**：v0.12 的 owner、reader 是人員的 Doris 帳號。改為：owner 是人，只在 Web Console 操作，不持有 Doris 帳號；資料存取（含 owner 本人）一律透過 service account，授權對象是 service account，權限由 owner 在平台 policy 上限內決定（見 [access-control.md](access-control.md)）。本文已依此改寫。
 > - **Console 申請頁、審核頁、開通狀態**：不採用。Workspace 申請與審核維持人工，核准後由平台透過 Web Console 的 Admin 後台執行開通（見 [web-console.md](web-console.md)）。v0.12 的「開通 workspace 與查看進度」一節未併入。
 > - **Managed curated 的 DDL**：執行身分為 service account；建表的 FE 風險 → TBD-40；刪表會連帶取得刪庫權限 → TBD-30。
@@ -24,7 +24,7 @@
 |------|------|
 | 資料平台團隊 | 審核申請、決定服務模式與 cluster、建立 database，並執行由平台管理的 table 操作。所屬 Tool Team 建置 Web Console 與授權後端，提供平台帳號與權限管理，以及後續的 owner 自助功能。 |
 | Workspace owner | 人。申請通過後由申請人擔任，也是該 workspace 的 data owner。在 Web Console 為自己的 workspace 申請 service account、設定其權限；本身沒有 Doris 帳號，自己要讀資料也透過 service account。 |
-| Service account | 實際存取資料的 Doris 帳號，權限由 owner 設定，不超過平台 policy 上限。能否授權給其他 workspace 的 service account → TBD-31。 |
+| Service account | 實際存取資料的 Doris 帳號，權限由 owner 設定，不超過平台 policy 上限。目前不支援授權給其他 workspace 的 service account。 |
 
 ## 交付範圍
 
@@ -78,7 +78,7 @@
 
 `domain_product` 橫跨 Fab A 和 Fab B，兩地各有一張 `domain_product__user_defined__curated.yield_daily`。報表系統要讀這張表，owner 為它申請了一個「報表用 service account」，然後選 Fab A → 目標 cluster → curated database → `yield_daily`。
 
-- 報表用 service account 已在 Fab A 的 cluster 建立：owner 可將 Fab A 這張表的 `SELECT_PRIV` grant 給它。（其他 workspace 的 service account → TBD-31）
+- 報表用 service account 已在 Fab A 的 cluster 建立：owner 可將 Fab A 這張表的 `SELECT_PRIV` grant 給它。
 - 報表用 service account 在 Fab B 的 cluster 還沒有帳號：須先建立才能另行 grant（多 fab 的帳號如何建立 → TBD-24）。
 - 日後在 Fab A 執行 revoke，只移除 Fab A 的那筆 grant。
 
@@ -139,7 +139,7 @@ Doris 4.x 官方 GRANT 文件所列的十項原生 privilege，供 Tool Team 設
 2. 選 cluster：從該 fab 中目前 workspace 可使用的 cluster 選取。
 3. 選 database。
 4. 選範圍：整個 database，或其中一張或多張 table。
-5. 選 service account：須屬於本 workspace，且已在所選 cluster 建立（其他 workspace → TBD-31）。
+5. 選 service account：須屬於本 workspace，且已在所選 cluster 建立。
 6. 選 privilege 並確認：只列出平台 policy 上限內的項目（例：raw 只能選 `SELECT_PRIV`）；確認 fab、cluster、範圍、service account 與 privilege 後送出 grant。
 
 - 切換 fab 時，清除原有的 cluster、database、table、service account 選擇。
@@ -175,7 +175,6 @@ Doris 4.x 官方 GRANT 文件所列的十項原生 privilege，供 Tool Team 設
 | Service account 申請是否需平台審核、憑證交付、多 fab 的帳號建立、命名、owner 離職或轉調交接 | TBD-24 |
 | 命名白名單細節 | TBD-26 |
 | OPA 外掛 PoC | TBD-27 |
-| 跨 workspace 分享 | TBD-31 |
 
 ## 參考文件
 

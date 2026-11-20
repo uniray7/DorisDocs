@@ -8,7 +8,7 @@
 ## 2. 目標與非目標
 > 要填：
 > - 目標：提供多租戶 OLAP 查詢服務 + data ingestion pipeline，以 managed / self-managed 兩種模式承接自 Oracle/HBase 轉移的分析型工作負載。
-> - 非目標（已確定）：不負責既有資料遷移；不承接交易型（OLTP）工作負載。跨 workspace 資料分享待定（TBD-31）。
+> - 非目標（已確定）：不負責既有資料遷移；不承接交易型（OLTP）工作負載；不支援跨 workspace 資料分享。
 
 ## 3. 目標使用者與使用情境
 > 要填：後端工程師（會寫 SQL）為主，多來自 lakehouse 環境。代表情境：(a) 部門申請 managed workspace，以平台 CDC pipeline 接上游 DB 做準即時報表、(b) managed 使用者以 Doris ELT 從 raw 產出 curated 分析表、(c) 高客製/大流量團隊申請 self-managed dedicated cluster 自建 pipeline。
@@ -55,9 +55,7 @@
 - **既有資料遷移**（Oracle/HBase → Doris 由各團隊自理）：平台聚焦服務本體，遷移工具成本高且一次性
 - **OLTP 工作負載**：Doris 定位為分析型查詢，不承接交易型場景
 - **BI 工具託管**：平台提供查詢介面，BI 工具由使用者自備（如需連線支援僅提供文件）
-
-### 待定
-- **跨 workspace 資料分享**：v0.12 提出 owner 可分享 table 讀取權給其他 workspace，方向未定（TBD-31）。
+- **跨 workspace 資料分享**：目前不支援，各 workspace 的資料完全隔離
 
 ### Future（非本期範圍，設計時預留）
 - **Lakehouse → Doris 灌資料通道**：作為正式 ingestion 路徑（非僅 staging 測試用）。batch pipeline 的來源介面應預留擴充空間；staging 的 lakehouse 匯入機制可視為前身。
@@ -112,7 +110,7 @@
 > 待決事項統一登記在 [00-progress.md 的 TBD 清單](../../00-progress.md#tbd-清單)；會簽結果記到 [decision-history.md](../../decision-history.md)。
 
 - 產品層級：TBD-1（tier 門檻）、TBD-2（超過 tier 3）、TBD-3（計費模式）、TBD-6（PII）、TBD-20（時程）
-- 治理與權限：TBD-5（row／column filter）、TBD-7（raw 建表審核）、TBD-8（self-managed DDL 治理）、TBD-29／30（開放直接建表）、TBD-31（跨 workspace 分享）
+- 治理與權限：TBD-5（row／column filter）、TBD-7（raw 建表審核）、TBD-8（self-managed DDL 治理）、TBD-29（dbt 直接 DDL）、TBD-30（curated 刪表方式）、TBD-40（建表的 FE 風險）
 
 ## 12. 衍生文件索引（階段 5）
 - System Architecture：`../architecture/system-architecture.md`

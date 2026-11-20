@@ -27,8 +27,8 @@
 | [workspace-application.md](internal/prd/workspace-application.md) | 2 Feature 細化 | 草稿 | 7、26、34 |
 | [staging-validation.md](internal/prd/staging-validation.md) | 2 Feature 細化 | 草稿 | 15 |
 | [cluster-topology-and-tiering.md](internal/prd/cluster-topology-and-tiering.md) | 2 Feature 細化 | 草稿 | 1、2、4、21、37 |
-| [workspace-isolation.md](internal/prd/workspace-isolation.md) | 2 Feature 細化 | 草稿 | 18、31 |
-| [authorization.md](internal/prd/authorization.md) | 2 Feature 細化 | 評審中 | 21–24、26、27、31、38、39 |
+| [workspace-isolation.md](internal/prd/workspace-isolation.md) | 2 Feature 細化 | 草稿 | 18 |
+| [authorization.md](internal/prd/authorization.md) | 2 Feature 細化 | 評審中 | 21–24、26、27、38、39 |
 | [access-control.md](internal/prd/access-control.md) | 2 Feature 細化 | 草稿（待再討論） | 10、11、16、22、24、30、38、39 |
 | [ddl-governance.md](internal/prd/ddl-governance.md) | 2 Feature 細化 | 草稿（待再討論） | 7、8、22、23、29、30、32、38、40、41 |
 | [streaming-ingestion.md](internal/prd/streaming-ingestion.md) | 2 Feature 細化 | 草稿（tmp 流程待改寫） | 28 |
@@ -80,7 +80,6 @@
 | TBD-28 | tmp 取消後的 ingestion 流程：CDC／batch 資料如何進 raw、parse／merge 由誰做、排程機制 | 工程師＋PM | streaming／batch 文件改寫 | streaming-ingestion、batch-ingestion | batch-ingestion、decision-history、managed-user-journey、prd/README、product-overview、streaming-ingestion、web-console | 未開始 |
 | TBD-29 | Self-managed 開放 dbt 直接 DDL 的風險與防護。**影響**：過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash | 工程師＋主管 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、monitoring-alerting、prd/README、product-overview、self-managed-operations、RFC-003 | 研究中 |
 | TBD-30 | Managed curated 刪表的執行方式：service account 自行 DROP 需要 database 級 `DROP_PRIV`，會連帶能刪整個 curated database（含無法復原的 `FORCE`）。選項 (a)–(d) 與建議見 ddl-governance。**影響**：選 (a) 可能整庫誤刪且無法復原；選 (b) 增加使用者等待與平台工作量 | PM＋工程師 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、managed-user-journey、prd/README、product-overview | 未開始 |
-| TBD-31 | 跨 workspace 分享。**影響**：與原本「不支援」的定位相反，影響隔離設計與對外溝通 | PM＋主管 | 對外文件 | authorization | authorization、decision-history、managed-user-journey、prd/README、product-overview、workspace-isolation | 未開始 |
 | TBD-32 | DDL 申請的提交管道（人工或 Console）與執行時效 | PM＋工程師 | 無 | ddl-governance | ddl-governance、managed-user-journey、self-managed-operations、web-console、RFC-003 | 未開始 |
 | TBD-33 | 監控堆疊與告警歸屬（含 80% 預警由哪個系統計算） | 工程師 | 無 | monitoring-alerting | managed-user-journey、monitoring-alerting、prd/README | 未開始 |
 | TBD-34 | Web Console Admin 後台涵蓋哪些開通動作 | 工程師（Tool Team）＋PM | 無 | web-console | decision-history、managed-user-journey、web-console、workspace-application | 未開始 |

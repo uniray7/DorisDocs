@@ -14,7 +14,7 @@
 ### 1. 資料隔離（Data）
 - 每個 ws 擁有專屬的 Doris databases。命名自由度跟著**服務模式**走、與 cluster 類型無關：managed（不論 shared 或 dedicated）一律遵循 `{ws}__{user_defined}__{raw|curated}`（平台自動化與 zone 治理依賴此慣例，且 tier 升級時 database 名不變）；self-managed 的命名方式待定（TBD-8）。
 - 授權以 **Doris GRANT 到 database 層級**實作：ws 帳號僅被授予自己 ws databases 的權限，無任何跨 ws 授權路徑。
-- **跨 ws 分享**：方向未定（TBD-31）。v0.12 提出 owner 可把 table 讀取權分享給其他 workspace（見 [authorization.md](authorization.md)）；使用者多來自習慣跨 ws 存取的 lakehouse，定案後需在對外文件前置溝通。
+- **跨 ws 分享**：目前不支援。
 - Managed 附屬資源同樣按 ws 隔離：Kafka topic（per-ws + ACL）、format 驗證失敗的 corrupted data MinIO 路徑（per-ws prefix）。
 
 ### 2. Metadata 隔離
@@ -80,4 +80,4 @@
 - [ ] 行為規格表 8 條全數通過（含三項 ⚠️ metadata 洩漏驗證）
 - [ ] 佈建/回收原語冪等（重複執行不產生殘留或報錯）
 - [ ] decommission 後以平台管理員權限確認無資料殘留，且清除紀錄可稽核
-- [ ] 跨 ws 分享定案後（TBD-31），對外文件說明與 lakehouse 的差異
+- [ ] 對外文件說明不支援跨 ws 分享（與 lakehouse 的差異）

@@ -37,7 +37,7 @@
 | ① 申請 | 填投影片、在週三會議報告 | 審核、判定 tier 與各 fab 的 cluster 類型 | [workspace-application.md](workspace-application.md) | TBD-26（命名）、TBD-7（schema 是否審核） |
 | ② Staging | 灌測試資料、提交試用報告 | 佈建 staging、審核報告 | [staging-validation.md](staging-validation.md) | 租期政策 |
 | ③ 開通 | — | Admin 後台開通（不建立 service account） | [web-console.md](web-console.md) | TBD-34 |
-| ④ Service account | Owner 申請 service account；選 fab、cluster、database／table、service account 與權限後送出 | 建立 service account、交付憑證、執行 grant／revoke | [access-control.md](access-control.md)、[authorization.md](authorization.md) | TBD-24、TBD-31（跨 workspace） |
+| ④ Service account | Owner 申請 service account；選 fab、cluster、database／table、service account 與權限後送出 | 建立 service account、交付憑證、執行 grant／revoke | [access-control.md](access-control.md)、[authorization.md](authorization.md) | TBD-24 |
 | ⑤ 寫入 | 送 CDC message 或上傳批次檔 | Pipeline 寫入 raw | [streaming-ingestion.md](streaming-ingestion.md)、[batch-ingestion.md](batch-ingestion.md) | TBD-28（tmp 取消後的流程） |
 | ⑥ 建表與加工 | 申請 raw 新表；curated 直接建表與加工 | 建立 raw table、留稽核紀錄 | [ddl-governance.md](ddl-governance.md) | TBD-7、TBD-30、TBD-32、TBD-40 |
 | ⑦ 看用量 | 看儀表板、設定告警 | 計量、強制告警 | [quota-and-usage.md](quota-and-usage.md) | TBD-33 |

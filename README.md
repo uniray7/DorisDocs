@@ -1,29 +1,37 @@
 # DorisDocs
 
-公司內部 OLAP Service（以 Apache Doris 為基礎）與 Data Ingestion Pipeline 的文件庫，包含兩大類文件：
+公司內部 OLAP 平台（以 Apache Doris 為基礎）的文件庫，涵蓋服務設計、授權、資料寫入（ingestion）、營運支援與對外使用文件。
 
-- **對外文件**（`docs/<slug>/external/`）：給其他部門的使用者，涵蓋服務申請、審核流程、使用手冊、使用限制規範、Service Spec。
-- **內部技術文件**（`docs/<slug>/internal/`）：給團隊自己用，涵蓋 PRD、Feature Spec、RFC、System Architecture、Data Flow。
+## 從哪裡開始讀
 
-## 如何產出新文件
+| 你是 | 先讀 | 接著讀 |
+|------|------|--------|
+| 管理層 | [產品摘要](docs/product-overview.md) | [RFC](docs/internal/rfc/) 的決策簡報 |
+| PM | [現況與 TBD 清單](docs/00-progress.md) | [PRD 總覽](docs/internal/prd/README.md) → [決議演進](docs/decision-history.md) |
+| 工程師 | [PRD 總覽](docs/internal/prd/README.md) | 各 feature 文件 → [RFC](docs/internal/rfc/) → 架構文件（`docs/internal/architecture/`，階段 5 產出） |
+| 平台使用者 | [對外文件](docs/external/)（階段 5 產出） | — |
 
-使用 `/olap-doc-workflow` 這個 skill（定義於 `.claude/skills/olap-doc-workflow/`）。它會引導一段 0-10 階段的對話——從脈絡挖掘、PRD 骨架、功能細化、邊界審查、非功能需求、治理審查、會簽，到衍生出 System Architecture / Data Flow / RFC / 對外文件——並把產出依序存進 `docs/<slug>/`。
+## 目錄
 
-每個功能/案子用一個英文 kebab-case slug 命名，例如 `docs/multi-tenant-quota/`。同一個 slug 底下的進度會被 `00-progress.md` 追蹤，之後可以直接呼叫 skill 接續未完成的階段。
-
-## 目錄結構
 ```
-docs/<slug>/
-  00-progress.md
+docs/
+  00-progress.md        現況摘要 + TBD 清單 + 文件狀態
+  decision-history.md   決議演進
+  product-overview.md   管理層一頁版
   internal/
-    PRD.md
-    system-architecture.md
-    data-flow.md
-    feature-specs/<feature-slug>.md
-    rfc/RFC-<NNN>-<topic-slug>.md
-  external/
-    service-application.md
-    usage-guide.md
-    limits-and-quotas.md
-    service-spec.md
+    prd/                PRD 總覽（README.md）與各 feature 細節
+    rfc/                有取捨的技術／產品決策
+    architecture/       系統架構、data flow
+  external/             對外文件：申請、使用手冊、使用限制、Service Spec
 ```
+
+## 文件規則
+
+- **只寫現況**：被推翻的決議記在 `decision-history.md`，正文不保留。
+- **TBD**：未定案或未研究的主題標 `TBD-<編號>`，統一登記在 `00-progress.md`，由 PM／工程師後續處理。
+- **專有名詞用英文**（workspace、fab、cluster、tier、managed／self-managed 等），不硬翻。
+- **同一件事只寫一處**，其他文件用連結。
+
+## 如何更新文件
+
+在 Claude Code 使用 `/olap-doc-workflow`（定義於 `.claude/skills/olap-doc-workflow/`）。它會讀取 `00-progress.md`、回報各文件狀態與 TBD，再依你指定的文件、階段或 TBD 繼續。任何改動都會先給 diff 確認，再 commit。

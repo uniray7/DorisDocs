@@ -1,6 +1,6 @@
 # System Architecture：<服務名稱>
 
-> 來源：PRD.md（Phase 8 衍生）
+> 來源：`docs/internal/prd/README.md`（階段 5 衍生）
 
 ## 架構總覽
 - 一段文字描述整體架構，搭配架構圖（可用 mermaid 或連結外部圖檔）

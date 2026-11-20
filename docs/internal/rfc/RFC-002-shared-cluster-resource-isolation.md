@@ -3,14 +3,14 @@
 - 狀態：草稿
 - 作者：平台團隊
 - 日期：2026-07-13
-- 相關 PRD：`internal/PRD.md § 7`、`feature-specs/workspace-isolation.md § 運算資源隔離`
-- 環境前提：Apache Doris **4.1.0**
+- 相關 PRD：`internal/prd/README.md § 7`、`internal/prd/workspace-isolation.md § 運算資源隔離`
+- 環境前提：Apache Doris **4.1.4**
 
 ## 背景
 
 Tier 1（shared cluster，僅 managed 模式）讓多個 workspace 共住同一座 Doris cluster。若不做運算資源隔離，任一租戶的重查詢/爆量會直接劣化鄰居的查詢延遲，違反「小規模團隊也能安心用 shared tier」的產品承諾，也會讓「效能不佳歸咎平台」的糾紛無從釐清。
 
-不做的後果：shared tier 不可信 → 所有租戶被迫申請 dedicated → 硬體池撐不住、tier 1 形同虛設。
+不做的後果：shared tier 不可信 → 所有租戶被迫申請 dedicated → 硬體撐不住、tier 1 形同虛設。
 
 ## 待決問題
 
@@ -28,7 +28,7 @@ Shared cluster 上，用哪一組機制、怎麼組合，來保證單一租戶�
 
 ### 第 1 層：查詢准入
 - Workload Group（per-ws）：`max_concurrency`、`max_queue_size`、`queue_timeout`——超併發先排隊，瞬間爆量兜底（對齊 Max QPS 5 分鐘滑動窗口決議）。
-- **Gateway/proxy（平台自建）**：per-ws QPS 計量與限流（Doris 無原生 QPS 配額）；統一連線端點（tier 遷移、failover 不換線）；集中連線數控管。
+- **Gateway/proxy（平台自建）**：per-ws QPS 計量與限流（Doris 無原生 QPS 配額）；統一連線端點（tier 遷移不換線）；集中連線數控管。
 
 ### 第 2 層：執行資源
 - CPU：`cpu_hard_limit`（**硬限制**；不採 `cpu_share` 軟限制——忙時按比例分無法保障 P99）。
@@ -43,7 +43,7 @@ Shared cluster 上，用哪一組機制、怎麼組合，來保證單一租戶�
 ### 第 4 層：寫入側治理（本平台架構的天然優勢）
 Shared cluster 僅 managed、寫入唯一通道是平台 pipeline，因此：
 - Per-ws ingestion 限速做在 pipeline consumer（Kafka 消費速率），不依賴 Doris 端擋。
-- Merge SQL 平台代管排程 → 可錯峰，避免多 ws merge 對撞。
+- 寫入 raw 由平台 pipeline 排程 → 可錯峰，避免多 ws 寫入對撞。
 - 批次大小/頻率統一治理 → 從源頭控制 compaction 壓力（高頻小批量寫入 → compaction 積壓 → 全 cluster 變慢，是 shared 最常見的隱形殺手）。
 
 ### 第 5 層（選配/升級路徑）：Resource Tag
@@ -51,7 +51,7 @@ Tier 1 預設不用。保留兩個適用場景：
 1. Shared 內出現「接近 tier 2 門檻但尚未升級」的大租戶，先用 tag 隔離止血。
 2. 作為 shared → dedicated 的中繼形態（tag 群組直接轉出成 dedicated cluster）。
 
-### Tier 1 建議初始參數（草案，隨 Phase 5 配額定案調整）
+### Tier 1 建議初始參數（草案，隨 TBD-15 配額定案調整）
 
 | 參數 | 初始值（待調） | 備註 |
 |------|---------------|------|
@@ -75,11 +75,11 @@ Tier 1 預設不用。保留兩個適用場景：
 - 監控：per-ws workload group 指標（排隊數、kill 數、限速觸發次數）進 quota-and-usage 儀表板。
 
 ## 待驗證項（實作時）
-- [ ] Doris 4.1.0 各參數的實際行為與文件一致（尤其 cpu_hard_limit 與 IO 限速的組合效果）
+- [ ] Doris 4.1.4 各參數的實際行為與文件一致（尤其 cpu_hard_limit 與 IO 限速的組合效果）
 - [ ] Workload group 數量上限（單 cluster 可承載的 ws 數）
 - [ ] Spill to disk 對 shared SSD 的 IO 反噬程度
 - [ ] Gateway 的 QPS 計量與 Doris 端 workload group 指標的一致性
-- [ ] **Arrow Flight protocol 的涵蓋**（2026-07-14 新增）：平台提供 MySQL + Arrow Flight 雙協定，gateway 以 MySQL protocol proxy 為前提；Arrow Flight 走 gRPC 且資料面直連 BE——gateway 能否代理？不能的話 Arrow Flight 查詢的 QPS 計量與限流走哪條路（Doris audit log 事後計量？workload group 端承擔？）
+- [ ] **Arrow Flight protocol 的涵蓋**（TBD-10）：平台提供 MySQL + Arrow Flight 雙協定，gateway 以 MySQL protocol proxy 為前提；Arrow Flight 走 gRPC 且資料面直連 BE——gateway 能否代理？不能的話 Arrow Flight 查詢的 QPS 計量與限流走哪條路（Doris audit log 事後計量？workload group 端承擔？）
 
 ## 決策紀錄
 | 日期 | 決議 | 決策者 |

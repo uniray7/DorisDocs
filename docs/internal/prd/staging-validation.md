@@ -1,7 +1,6 @@
-# Feature Spec：Staging 驗證
+# Staging 驗證
 
-> 來源：[PRD.md](../PRD.md) § 6.2
-> 狀態：草稿（Phase 3）
+> 來源：[PRD](README.md) § 核心功能大綱｜狀態：草稿
 > 對應申請狀態機區段：`STAGING_PROVISIONED → STAGING_TESTING → TEST_REPORT_REVIEW`（見 [workspace-application.md](workspace-application.md)）
 
 ## 目的
@@ -10,26 +9,26 @@
 - 錯誤的 schema/規模預估進入正式環境後需要平台協助 migration；
 - 使用者完全沒摸過系統就上線，上線後才發現用法錯誤。
 
-> **規格限制（2026-07-13 決議）**：staging 硬體規格**不會**與目標 tier 一致（機器不足），屬固定的小規格試用環境。因此效能測試結果**僅供參考、不可直接外推**至正式環境；報告審核重點是 schema/查詢設計的合理性與單位效能異常（例如小規模就明顯超時的查詢，上了正式環境也不會好）。
+> **規格限制**：staging 硬體規格**不會**與目標 tier 一致（機器不足），屬固定的小規格試用環境。因此效能測試結果**僅供參考、不可直接外推**至正式環境；報告審核重點是 schema/查詢設計的合理性與單位效能異常（例如小規模就明顯超時的查詢，上了正式環境也不會好）。
 
 ## User Story
 
 1. 作為**申請者**，我想要在正式開通前於 staging 環境驗證我的 schema 與查詢效能，以便在錯誤成本最低的時候調整設計。
-2. 作為**平台管理員**，我想要以量化的測試報告作為開通依據，以便把「效能達標」的責任在開通前就界定清楚。
-3. 作為**申請者**，我想要方便地產生或匯入與申報量級相符的測試資料，以便不用自己造一套資料生成工具。
+2. 作為**平台管理員**，我想要以測試報告確認 schema 與查詢設計合理後再開通，以便減少上線後的 migration。
+3. 作為**申請者**，我想要在 staging 容量內方便地產生或匯入測試資料，以便不用自己造一套資料生成工具。
 
 ## 前置條件與假設
 
 - 申請已達 `APPROVED` 狀態（按模式完成審查：self-managed 成本核准；managed 規模審查定 shared/dedicated）。
 - Staging 為**固定小規格的試用環境**，不隨目標 tier 調整；多個申請者可能共用 staging 資源（隔離方式比照 shared cluster）。
-- 兩種服務模式都要通過 staging 驗證；差異在灌資料方式（見下）。
+- **Managed 必須通過 staging 驗證；self-managed 為選配**（申請者可自行決定是否租借試用）。
 
 ## 流程
 
 ### 1. Staging 租借（STAGING_PROVISIONED）
-- 系統依目標 tier 佈建 staging 環境（managed 含 zone databases 與投影片 schema 建立的 raw 表；self-managed 為空 cluster）。
+- 平台佈建固定小規格的 staging 環境（managed 含 zone databases 與投影片 schema 建立的 raw 表；self-managed 為空 cluster）。
 - 租借有**期限**（建議預設 14 天，可申請延長一次）——避免 staging 資源被長期占用。
-  - ⚠️ 期限與延長政策待定案。
+  - ⚠️ 期限與延長政策待定案（見下方「待確認事項」）。
 - 交付 staging 連線資訊與測試指引。
 
 ### 2. 灌測試資料（STAGING_TESTING）
@@ -41,7 +40,7 @@
 | (b) Lakehouse 匯入 | 平台提供機制從 production lakehouse 灌真實資料（或抽樣子集）到 staging 測試 | 兩種模式 |
 
 - 灌入通道：managed 走平台 pipeline（staging 版）；self-managed 自行寫入。
-- 方式 (b) 的 PII 考量經評估後**忽略**（2026-07-13 決議）。
+- 方式 (b) 的 PII 考量經評估後**忽略**。
 
 ### 3. 試用驗證與報告（STAGING_TESTING → TEST_REPORT_REVIEW）
 - 使用者以申報的 query pattern 在 staging 上實測（規模受限，數據僅供參考）。
@@ -57,7 +56,7 @@
 
 ## 作業方式（人工）
 
-> 申請流程無自動化 API（2026-07-13 決議），staging 相關作業一律人工：
+> 申請流程無自動化 API，staging 相關作業一律人工：
 
 | 作業 | 方式 |
 |------|------|
@@ -74,18 +73,20 @@
 
 > 未來自動化（roadmap）：申請量成長後再實作 staging 租借/報告提交 API，本期不做。
 
+## 待確認事項
+
+1. Staging 租借期限與延長政策（建議預設 14 天、可延長一次）。
+
 ## 與其他功能的依賴關係
 - 上游：workspace-application（APPROVED 狀態）；schema 來自申請時審核結果。
 - 方式 (b) 依賴 lakehouse 匯入機制（實作細節待補，與 batch ingestion 可能共用）。
-- Staging 回收的資料清除需符合治理規範（Phase 6）。
+- Staging 回收的資料清除需符合治理規範（TBD-6）。
 
-## 邊界審查（Phase 4 補上）
-| Edge Case | 是否適用 | 處理方式 |
-|-----------|---------|----------|
-| （待 Phase 4） | | |
+## 邊界審查
+未進行（階段 2 邊界審查，依 `edge-case-checklist.md`）。
 
 ## 驗收標準（Acceptance Criteria）
 - [ ] 對外文件明確告知：staging 為小規格試用環境，效能數據僅供參考、不構成平台效能承諾
-- [ ] 租期到期自動通知並回收（資料清除有紀錄）
-- [ ] 灌入量超過 staging 容量上限時被正確擋下
-- [ ] 報告缺項無法提交；審核結果三種出路（pass / 重測 / 重審 tier）狀態轉換正確
+- [ ] 租期到期前通知，到期回收（資料清除有紀錄）
+- [ ] 灌入量超過 staging 容量上限時要求清理
+- [ ] 報告缺項退回補件；審核結果三種出路（pass / 重測 / 重審 tier）狀態轉換正確

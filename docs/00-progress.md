@@ -30,7 +30,7 @@
 | [workspace-isolation.md](internal/prd/workspace-isolation.md) | 2 Feature 細化 | 草稿 | 18、31 |
 | [authorization.md](internal/prd/authorization.md) | 2 Feature 細化 | 評審中 | 21–24、26、27、31、38、39 |
 | [access-control.md](internal/prd/access-control.md) | 2 Feature 細化 | 草稿（待再討論） | 10、11、16、22、24、30、38、39 |
-| [ddl-governance.md](internal/prd/ddl-governance.md) | 2 Feature 細化 | 草稿（待再討論） | 7、8、22、23、29、30、32、38、40 |
+| [ddl-governance.md](internal/prd/ddl-governance.md) | 2 Feature 細化 | 草稿（待再討論） | 7、8、22、23、29、30、32、38、40、41 |
 | [streaming-ingestion.md](internal/prd/streaming-ingestion.md) | 2 Feature 細化 | 草稿（tmp 流程待改寫） | 28 |
 | [batch-ingestion.md](internal/prd/batch-ingestion.md) | 2 Feature 細化 | 草稿（假設待確認） | 12、28 |
 | [quota-and-usage.md](internal/prd/quota-and-usage.md) | 2 Feature 細化 | 草稿 | 3、4、15、19、33 |
@@ -79,7 +79,7 @@
 | TBD-27 | OPA 外掛 PoC（4.1.4 相容性、兩種協定一致性、revoke 生效來源） | 工程師 | 無 | authorization | authorization、decision-history | 未開始 |
 | TBD-28 | tmp 取消後的 ingestion 流程：CDC／batch 資料如何進 raw、parse／merge 由誰做、排程機制 | 工程師＋PM | streaming／batch 文件改寫 | streaming-ingestion、batch-ingestion | batch-ingestion、decision-history、managed-user-journey、prd/README、product-overview、streaming-ingestion、web-console | 未開始 |
 | TBD-29 | Self-managed 開放 dbt 直接 DDL 的風險與防護。**影響**：過多或過碎的 partition 可能造成 FE 記憶體壓力甚至 cluster crash | 工程師＋主管 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、monitoring-alerting、prd/README、product-overview、self-managed-operations、RFC-003 | 研究中 |
-| TBD-30 | Managed curated 開放 service account CREATE／DROP 是否安全。**影響**：shared cluster 上影響同 cluster 所有租戶 | PM＋工程師 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、managed-user-journey、prd/README、product-overview | 未開始 |
+| TBD-30 | Managed curated 刪表的執行方式：service account 自行 DROP 需要 database 級 `DROP_PRIV`，會連帶能刪整個 curated database（含無法復原的 `FORCE`）。選項 (a)–(d) 與建議見 ddl-governance。**影響**：選 (a) 可能整庫誤刪且無法復原；選 (b) 增加使用者等待與平台工作量 | PM＋工程師 | 無 | ddl-governance | access-control、authorization、ddl-governance、decision-history、managed-user-journey、prd/README、product-overview | 未開始 |
 | TBD-31 | 跨 workspace 分享。**影響**：與原本「不支援」的定位相反，影響隔離設計與對外溝通 | PM＋主管 | 對外文件 | authorization | authorization、decision-history、managed-user-journey、prd/README、product-overview、workspace-isolation | 未開始 |
 | TBD-32 | DDL 申請的提交管道（人工或 Console）與執行時效 | PM＋工程師 | 無 | ddl-governance | ddl-governance、managed-user-journey、self-managed-operations、web-console、RFC-003 | 未開始 |
 | TBD-33 | 監控堆疊與告警歸屬（含 80% 預警由哪個系統計算） | 工程師 | 無 | monitoring-alerting | managed-user-journey、monitoring-alerting、prd/README | 未開始 |
@@ -89,7 +89,8 @@
 | TBD-37 | Nomad 由 1.11.1 升級到 1.11.3（sticky 相關 bug）：以 L2 release notes 確認是否已修正、評估升級影響 | 工程師 | 無 | cluster-topology-and-tiering | cluster-topology-and-tiering、decision-history | 研究中 |
 | TBD-38 | TRUNCATE TABLE 所需權限實機驗證：4.x 官方文件寫 `DROP_PRIV`，4.1.4 source 檢查 `LOAD_PRIV`；若為 LOAD，有寫入權即可清空表 | 工程師 | 無 | ddl-governance | access-control、authorization、ddl-governance | 未開始 |
 | TBD-39 | Arrow Flight SQL 在 4.1.4 的支援範圍實機驗證（目前只用過 SELECT；官方 3.x 文件示範可執行 DDL、SHOW、INSERT），以及平台是否要限制只能 SELECT | 工程師 | 無 | access-control | access-control、authorization、decision-history、prd/README | 未開始 |
-| TBD-40 | 防護參數的調整值與理由（partition、bucket、replica quota、回收站保留時間），shared 與 dedicated 是否不同 | 工程師＋PM | 無 | ddl-governance | ddl-governance | 未開始 |
+| TBD-40 | Managed curated 開放 service account 建表（與 self-managed dbt 直接 DDL）的 FE 風險：防護參數的調整值與理由（partition、bucket、replica quota、回收站保留時間），shared 與 dedicated 是否不同。**影響**：shared cluster 上一個 workspace 建表失控會影響同 cluster 所有租戶 | 工程師＋PM | 無 | ddl-governance | access-control、authorization、decision-history、ddl-governance、managed-user-journey、prd/README、product-overview | 未開始 |
+| TBD-41 | 回收站相關權限實機驗證：清空回收站（`DROP CATALOG RECYCLE BIN`）文件寫需 `ADMIN_PRIV`，4.1.4 source 找不到權限檢查，若屬實任何帳號都能永久清除回收站中其他 workspace 的資料；RECOVER 文件寫 `ADMIN_PRIV`，source 為 ADMIN、ALTER、CREATE 任一即可 | 工程師 | 無 | ddl-governance | ddl-governance | 未開始 |
 
 ## 各文件的細項待確認
 

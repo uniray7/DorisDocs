@@ -26,12 +26,12 @@
 | Data Volume | Workspace 占用的儲存量。**申請/審核階段**以來源原始大小估算 tier；**上線後計量**以 Doris 壓縮後實際占用計配額。 | 對外文件需提供壓縮率參考換算例 |
 | Max QPS | Workspace 的查詢速率上限，以**滑動窗口平均（5 分鐘）**計量判定超標。 | 瞬間爆量由 resource group 併發限制兜底，不直接判超標 |
 | 查詢協定 | 平台提供兩種查詢介面：**MySQL protocol**（完整 SQL，含 metadata SQL）與 **Arrow Flight SQL**（目前只使用過 SELECT；其他語句的支援範圍待驗證，TBD-39）。 | 共用同一權限體系；細節見 access-control spec |
-| Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校）的服務模式。寫入 raw 一律走平台 pipeline；raw table 由平台建立（建表前是否審核 schema：TBD-7），curated table 由 service account 直接建立（TBD-30）。 | 申請時選定，**不可事後轉換** |
+| Managed 模式 | 平台承擔資料管理責任（備份還原、保留清除、效能調校）的服務模式。寫入 raw 一律走平台 pipeline；raw table 由平台建立（建表前是否審核 schema：TBD-7），curated table 由 service account 直接建立（TBD-30、TBD-40）。 | 申請時選定，**不可事後轉換** |
 | Self-managed 模式 | 使用者自行管理資料的服務模式：可自行灌資料（自建 pipeline）；database 由平台建立，table DDL 目前一律提交平台代建，是否因 dbt 開放直接 DDL 待定（TBD-29）。平台責任限縮為日常 infra 告警與代操作（scale in/out，目前無付費機制）；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）提 request 由 PM 排優先權，非平台義務。**限定 dedicated cluster（tier 2+）**。 | 平台不負資料管理責任；不可用平台 pipeline |
 | Ingestion Job | 使用者在平台 pipeline 上設定的一條匯入任務（batch 或 streaming）。**僅 managed 模式可用**。 | |
 | Batch Ingestion | 平台提供的批次匯入通道（僅 managed）。 | |
 | Streaming Ingestion | 平台提供的準即時匯入通道（僅 managed）：使用者以固定 format 的 message 灌進平台 Kafka，由平台 pipeline 寫入 raw（tmp zone 已取消，流程待改寫：TBD-28）。支援三種 format：generic CDC event、DB2 JSON CDC、DB2 XML CDC（後兩者規格見內部文件）。 | Format 驗證失敗落 corrupted data（MinIO 指定路徑）並告警 |
-| DDL 治理 | Database 由平台建立。Managed：raw table 由平台建立（是否審核：TBD-7），curated table 由 service account 直接建立（TBD-30）。Self-managed：一律平台代建（TBD-29）。細節見 [ddl-governance.md](ddl-governance.md)。 | 與 workspace 申請是兩條獨立流程 |
+| DDL 治理 | Database 由平台建立。Managed：raw table 由平台建立（是否審核：TBD-7），curated table 由 service account 直接建立（TBD-30、TBD-40）。Self-managed：一律平台代建（TBD-29）。細節見 [ddl-governance.md](ddl-governance.md)。 | 與 workspace 申請是兩條獨立流程 |
 | Zone | Managed 的資料分層：**raw**（平台 pipeline 寫入、平台建表）→ **curated**（service account 以 `INSERT … SELECT` 產出）。tmp zone 已取消。 | 僅 managed 適用 |
 | Database 命名 | `{ws}__{user_defined}__{raw\|curated}`（雙底線分隔，zone 置尾）；規則與白名單見 [authorization.md](authorization.md)（TBD-26）。 | 僅 managed；self-managed 命名待定（TBD-8） |
 | Staging 環境 | 正式開通前的**固定小規格試用環境**（不隨目標 tier 調整）：使用者租借後灌測試資料（自產假資料或自 production lakehouse 匯入）試用，提交設計合理性報告，通過才開通正式環境。 | 效能數據僅供參考、不可外推，不構成平台效能承諾 |
@@ -71,7 +71,7 @@
 4. **Cluster 拓撲與 tier**（[cluster-topology-and-tiering.md](cluster-topology-and-tiering.md)）——fab 與 cluster 拓撲、shared/dedicated 判定、超標偵測、升降級流程；self-managed 限定 tier 2+。
 5. **Streaming ingestion pipeline（CDC on Kafka，僅 managed）**（[streaming-ingestion.md](streaming-ingestion.md)）——固定三種 message format（generic CDC / DB2 JSON CDC / DB2 XML CDC）；tmp zone 取消後寫入 raw 的流程待改寫（TBD-28）；format 驗證失敗落 MinIO corrupted data 路徑並告警。
 6. **Batch ingestion pipeline（僅 managed）**（[batch-ingestion.md](batch-ingestion.md)）——批次匯入的設定、排程、錯誤處理；來源介面預留擴充（future：lakehouse → Doris 通道）。
-7. **DDL 治理**（[ddl-governance.md](ddl-governance.md)）——database 由平台建立；managed raw 由平台建立（是否審核：TBD-7）、curated 由 service account 直接建立（TBD-30）；self-managed 一律平台代建（TBD-29）。含開放直接 DDL 的風險與可研究的防護。
+7. **DDL 治理**（[ddl-governance.md](ddl-governance.md)）——database 由平台建立；managed raw 由平台建立（是否審核：TBD-7）、curated 由 service account 直接建立（TBD-30、TBD-40）；self-managed 一律平台代建（TBD-29）。含開放直接 DDL 的風險與可研究的防護。
 8. **Self-managed 營運支援**（[self-managed-operations.md](self-managed-operations.md)）——日常 infra 告警、保護性 config、scale in/out 代操作；其他需求（使用問題/新版本/新功能/建表諮詢/效能優化）走 PM request 排優先權（非義務，目前無付費機制）。
 9. **配額與用量可視化**（[quota-and-usage.md](quota-and-usage.md)）——使用者查看自己的配額、用量、查詢效能。
 10. **帳號模型與查詢協定**（[access-control.md](access-control.md)）——帳號全由平台管理、資料存取一律透過 service account；MySQL protocol 與 Arrow Flight SQL。
@@ -91,7 +91,7 @@
 > | 申請審查 | 決定 shared/dedicated；須申報 ws 整體預期 data size | 僅需管理層成本核准 |
 > | 開通內容 | Cluster、raw／curated databases、pipeline、監控 | Cluster + monitor/alert/log |
 > | 寫入通道 | 平台 pipeline（唯一） | 一律自寫 |
-> | DDL | Database 由平台建立；raw 由平台建立（是否審核：TBD-7）；curated 由 service account 直接建立（TBD-30） | 一律平台代建（驗證＋保護性 property 注入，不驗 schema 設計）；是否因 dbt 開放直接 DDL：TBD-29 |
+> | DDL | Database 由平台建立；raw 由平台建立（是否審核：TBD-7）；curated 由 service account 直接建立（TBD-30、TBD-40） | 一律平台代建（驗證＋保護性 property 注入，不驗 schema 設計）；是否因 dbt 開放直接 DDL：TBD-29 |
 > | 備份還原/保留清除/效能調校 | 平台承擔 | 使用者自負 |
 > | Schema 品質 | Raw：依 TBD-7；curated：使用者自負 | 使用者自負 |
 > | 平台支援 | 完整 | 日常 infra 告警 + 代操作（scale in/out）；其他需求走 PM request 排優先權 |

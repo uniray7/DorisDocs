@@ -7,7 +7,7 @@
 > - **跨 workspace 分享**：v0.12 允許 owner 分享給其他 workspace；方向未定 → TBD-31。
 > - **帳號模型**：v0.12 的 owner、reader 是人員的 Doris 帳號。改為：owner 是人，只在 Web Console 操作，不持有 Doris 帳號；資料存取（含 owner 本人）一律透過 service account，授權對象是 service account，權限由 owner 在平台 policy 上限內決定（見 [access-control.md](access-control.md)）。本文已依此改寫。
 > - **Console 申請頁、審核頁、開通狀態**：不採用。Workspace 申請與審核維持人工，核准後由平台透過 Web Console 的 Admin 後台執行開通（見 [web-console.md](web-console.md)）。v0.12 的「開通 workspace 與查看進度」一節未併入。
-> - **Managed curated 的 DDL**：執行身分為 service account；開放 CREATE／DROP 是否安全 → TBD-30。
+> - **Managed curated 的 DDL**：執行身分為 service account；建表的 FE 風險 → TBD-40；刪表會連帶取得刪庫權限 → TBD-30。
 > - **TRUNCATE 所需權限**：v0.12 依 4.x 官方文件寫 `DROP_PRIV`，但 4.1.4 source 檢查的是 `LOAD_PRIV`，待實機驗證 → TBD-38。
 > - **Arrow Flight SQL 支援範圍**：目前只使用過 SELECT，其他語句待驗證 → TBD-39。
 
@@ -72,7 +72,7 @@
 | Database 範例 | 誰能讀寫 | 誰能管理資料表 |
 |---------------|----------|----------------|
 | `domain_product__user_defined__raw` | Service account 只能讀；僅平台 ingestion pipeline 可寫入指定的 raw 表 | 平台負責建表、改表、刪表及清空資料 |
-| `domain_product__user_defined__curated` | Service account 可讀寫（依 owner 設定），例如用 `INSERT … SELECT` 將 raw 資料整理後寫入 | Service account 可 CREATE／DROP／TRUNCATE TABLE（依 owner 設定；TBD-30）；ALTER 待確認（TBD-22） |
+| `domain_product__user_defined__curated` | Service account 可讀寫（依 owner 設定），例如用 `INSERT … SELECT` 將 raw 資料整理後寫入 | Service account 可 CREATE／DROP／TRUNCATE TABLE（依 owner 設定；建表風險 TBD-40、刪表方式 TBD-30）；ALTER 待確認（TBD-22） |
 
 ### 範例：同一 owner 在兩個 fab 授權
 

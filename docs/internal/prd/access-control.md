@@ -20,7 +20,7 @@
 
 | 身分 | raw database | curated database |
 |------|--------------|------------------|
-| Service account | 只能讀（SELECT），不可寫入 | SELECT、INSERT、CREATE TABLE、DROP TABLE → 開放建表是否安全見 TBD-30；ALTER 見 TBD-22；TRUNCATE 所需權限待驗證（TBD-38） |
+| Service account | 只能讀（SELECT），不可寫入 | SELECT、INSERT、CREATE TABLE、DROP TABLE → 建表的 FE 風險見 TBD-40；刪表方式見 TBD-30；ALTER 見 TBD-22；TRUNCATE 所需權限待驗證（TBD-38） |
 | 平台 ingestion pipeline 帳號 | 寫入指定的 raw 表 | — |
 | 平台系統帳號 | 建表、改表、刪表、清空 | — |
 

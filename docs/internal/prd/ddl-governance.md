@@ -7,7 +7,7 @@
 | 物件 | Managed | Self-managed |
 |------|---------|--------------|
 | Database | 平台建立（owner 透過平台申請） | 平台建立；命名方式 → TBD-8 |
-| Table | **raw**：平台建表、改表、刪表、清空；建表前是否審核 schema → TBD-7<br>**curated**：service account 直接 CREATE／DROP／TRUNCATE（是否安全 → TBD-30）；ALTER → TBD-22 | 一律提交平台代建（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 前提）；是否因 dbt 開放直接 DDL → TBD-29 |
+| Table | **raw**：平台建表、改表、刪表、清空；建表前是否審核 schema → TBD-7<br>**curated**：service account 直接 CREATE／DROP／TRUNCATE（建表的 FE 風險 → TBD-40；刪表方式 → TBD-30）；ALTER → TBD-22 | 一律提交平台代建（[RFC-003](../rfc/RFC-003-self-managed-ddl-governance-and-rr.md) 前提）；是否因 dbt 開放直接 DDL → TBD-29 |
 
 - DDL 申請的提交管道（人工或 Console）與執行時效 → TBD-32。
 - 所有經平台執行的 DDL 都留稽核紀錄：誰申請、誰核准、何時執行、DDL 全文；ALTER／DROP 執行前記錄變更前 schema。
@@ -37,8 +37,26 @@
 ### Curated table（service account 直接執行）
 
 - Service account 在 curated database 可直接 CREATE／DROP／TRUNCATE TABLE，計入儲存配額。
-- **刪表會連帶刪庫的權限**：Doris 沒有建立者擁有權，建表不會自動授權給建立者。要讓 service account 刪自己建的表，只能授予 database 級 `DROP_PRIV`，而 DROP DATABASE 檢查的正是這個權限，等於也能刪掉整個 curated database。可行方向（待 TBD-30 討論）：接受並靠回收站與稽核兜底；DROP 改由平台執行；或建表後由平台補授表級 `DROP_PRIV`。
-- **待 PM 重新評估（TBD-30）**：開放直接建表會帶來下方「開放直接 DDL 的風險」。tier 1 是 shared cluster，FE 由多個 workspace 共用，一個 workspace 出錯會影響同 cluster 的所有租戶，風險高於 self-managed。
+- **建表的風險（TBD-40）**：開放直接建表會帶來下方「開放直接 DDL 的風險」。tier 1 是 shared cluster，FE 由多個 workspace 共用，一個 workspace 出錯會影響同 cluster 的所有租戶，風險高於 self-managed。開放前要先調低下方的「防護參數」。
+- **刪表會連帶取得刪庫的權限（TBD-30）**：見下一節。
+
+#### 刪表的執行方式（TBD-30，交 PM 決定）
+
+Doris 沒有建立者擁有權，建表不會自動授權給建立者。要讓 service account 刪自己建的表，只能授予 database 級 `DROP_PRIV`，而 DROP DATABASE 檢查的正是這個權限，等於也能刪掉整個 curated database。另外：
+
+- 不加 `FORCE` 的 DROP 會進回收站，`catalog_trash_expire_second`（預設 1 天）內可 RECOVER；**加 `FORCE` 不需要額外權限，直接清除、無法復原**。所以「靠回收站兜底」擋不住 `DROP DATABASE … FORCE`。
+- SQL block rule（以 regex 攔截 SQL）在 4.1.4 source 中只檢查查詢，DDL 在檢查前就執行，應無法用來擋 DROP DATABASE（需實機驗證）。
+- 清空回收站所需的權限，文件與 source 不一致 → TBD-41。
+
+| 選項 | 做法 | 好處 | 風險或成本 |
+|------|------|------|-----------|
+| (a) 接受 | 給 service account curated 的 database 級 `DROP_PRIV` | 最簡單，使用者最自由 | 可刪掉整個 curated database，加 `FORCE` 無法復原；只能靠 DR（TBD-36，尚未建置）或從 raw 重算 |
+| (b) 平台執行 DROP | Service account 只有 CREATE、INSERT；刪表向平台申請，平台以不加 `FORCE` 的 DROP 執行 | 最安全，誤刪 1 天內可救回 | 使用者要等；平台多一道人工或自動流程 |
+| (c) 建表後補授權 | 平台偵測新表（audit log 或定期比對），把該表的表級 `DROP_PRIV` 授予建表的 service account | 能刪自己建的表，刪不了整個 database | Tool Team 要開發偵測與補授權；建表到補授權之間刪不了 |
+| (d) 自訂授權外掛（長期） | 以 TBD-27 同一套外掛機制，讓 DROP TABLE 通過、DROP DATABASE 拒絕 | 權限切分最精準 | 需開發外掛，可併入 OPA PoC 評估；可行性為推論 |
+
+- 影響範圍只在該 workspace 的 curated database；raw 不受影響（service account 在 raw 沒有 DROP）。Curated 由 raw 以 `INSERT … SELECT` 產出，保留加工 SQL 即可重算。
+- **建議**：第一版採 (b)，符合 07-17「先緊縮後放寬」的原則；刪表頻繁時再評估 (c) 或 (d)。
 
 ## Self-managed
 
@@ -58,7 +76,7 @@
 
 ## 開放直接 DDL 的風險與可研究的防護
 
-適用於 self-managed 開放 dbt 直接 DDL（TBD-29）與 managed curated 開放建表（TBD-30）。下列「依據」標「推論」者需在 4.1.4 實機驗證。
+適用於 self-managed 開放 dbt 直接 DDL（TBD-29）與 managed curated 開放建表（TBD-40）。下列「依據」標「推論」者需在 4.1.4 實機驗證。
 
 ### 風險
 
@@ -118,4 +136,11 @@
 - [L1] DropDatabaseCommand.java（database 級 `DROP_PRIV`）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/nereids/trees/plans/commands/DropDatabaseCommand.java｜4.1.4｜2026-11-19
 - [L1] Config.java（partition、bucket、replica quota、回收站參數預設值）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-common/src/main/java/org/apache/doris/common/Config.java｜4.1.4｜2026-11-19
 - [L1] status.h（`TOO_MANY_VERSION` = -235）｜https://raw.githubusercontent.com/apache/doris/4.1.4/be/src/common/status.h｜4.1.4｜2026-11-19
+- [L1] DropTableCommand.java（表級 `DROP_PRIV`；`FORCE` 不另檢查權限）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/nereids/trees/plans/commands/DropTableCommand.java｜4.1.4｜2026-11-20
+- [L1] CatalogRecycleBin.java（`FORCE` 的 recycle time 為 0，立即清除）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/catalog/CatalogRecycleBin.java｜4.1.4｜2026-11-20
+- [L1] DROP TABLE 文件（`FORCE` 刪除後無法復原）｜https://raw.githubusercontent.com/apache/doris-website/master/versioned_docs/version-4.x/sql-manual/sql-statements/table-and-view/table/DROP-TABLE.md｜4.x｜2026-11-20
+- [L1] StmtExecutor.java（SQL block rule 只在查詢路徑檢查；DDL command 先執行）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/qe/StmtExecutor.java｜4.1.4｜2026-11-20
+- [L1] DropCatalogRecycleBinCommand.java（找不到權限檢查）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/nereids/trees/plans/commands/DropCatalogRecycleBinCommand.java｜4.1.4｜2026-11-20
+- [L1] DROP CATALOG RECYCLE BIN 文件（寫 `ADMIN_PRIV`）｜https://raw.githubusercontent.com/apache/doris-website/master/versioned_docs/version-4.x/sql-manual/sql-statements/recycle/DROP-CATALOG-RECYCLE-BIN.md｜4.x｜2026-11-20
+- [L1] RecoverTableCommand.java、PrivPredicate.java（RECOVER 檢查 ADMIN、ALTER、CREATE 任一即可；文件寫 `ADMIN_PRIV`）｜https://raw.githubusercontent.com/apache/doris/4.1.4/fe/fe-core/src/main/java/org/apache/doris/nereids/trees/plans/commands/RecoverTableCommand.java｜4.1.4｜2026-11-20
 - [L1] Built-in Authorization 文件（權限層級、無擁有權概念）｜https://raw.githubusercontent.com/apache/doris-website/master/versioned_docs/version-4.x/admin-manual/auth/authorization/internal.md｜4.x｜2026-11-19

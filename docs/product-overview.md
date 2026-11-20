@@ -68,7 +68,7 @@ Tier 1 為 shared cluster（僅 managed），tier 2 起為 dedicated；超過 ti
 
 ### 待拍板（會影響產品走向）
 
-需要管理層拍板的事項：TBD-1、TBD-2、TBD-3、TBD-4、TBD-5、TBD-6、TBD-7、TBD-8、TBD-20、TBD-29、TBD-30、TBD-31。各項的影響、負責人與狀態見 [00-progress.md 的 TBD 清單](00-progress.md#tbd-清單)。
+需要管理層拍板的事項：TBD-1、TBD-2、TBD-3、TBD-4、TBD-5、TBD-6、TBD-7、TBD-8、TBD-20、TBD-29、TBD-30、TBD-31、TBD-40。各項的影響、負責人與狀態見 [00-progress.md 的 TBD 清單](00-progress.md#tbd-清單)。
 
 ### 需注意的風險
 - **人工申請流程的規模瓶頸**：每週三會議承載量有限，申請量成長時會排隊；已預留自動化路徑，但需要有觸發升級的判斷點。
